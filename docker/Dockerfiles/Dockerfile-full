@@ -1,6 +1,5 @@
 ARG ARCHTAG
-# FROM openwebrx-base:$ARCHTAG
-FROM openwebrx-base as $ARCHTAG
+FROM openwebrx-base:$ARCHTAG
 
 COPY docker/scripts/install-dependencies-*.sh \
      docker/files/sdrplay/install-lib.*.patch \
