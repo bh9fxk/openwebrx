@@ -57,7 +57,7 @@ rm /js8call-hamlib.patch
 cmakebuild ${JS8CALL_DIR}
 rm ${JS8CALL_TGZ}
 
-WSJT_DIR=wsjtx-2.6.1
+WSJT_DIR=wsjtx-2.7.0
 WSJT_TGZ=${WSJT_DIR}.tgz
 wget https://downloads.sourceforge.net/project/wsjt/${WSJT_DIR}/${WSJT_TGZ}
 tar xfz ${WSJT_TGZ}
@@ -68,9 +68,11 @@ rm ${WSJT_TGZ}
 
 git clone https://github.com/alexander-sholohov/msk144decoder.git
 # latest from main as of 2023-02-21
-MAKEFLAGS="" cmakebuild msk144decoder fe2991681e455636e258e83c29fd4b2a72d16095
+# MAKEFLAGS="" cmakebuild msk144decoder fe2991681e455636e258e83c29fd4b2a72d16095
+# latest from main as of 2024-06-07
+ MAKEFLAGS="" cmakebuild msk144decoder 761d0b3a61cde664d4c25b1c6ff1d9c0e395af23
 
-git clone --depth 1 -b 1.6 https://github.com/wb2osz/direwolf.git
+git clone --depth 1 -b 1.8.1 https://github.com/wb2osz/direwolf.git
 cd direwolf
 # hamlib is present (necessary for the wsjt-x and js8call builds) and would be used, but there's no real need.
 # this patch prevents direwolf from linking to it, and it can be stripped at the end of the script.
@@ -123,6 +125,9 @@ rm -rf dump1090
 git clone https://github.com/merbanan/rtl_433.git
 # latest from master as of 2023-09-06
 CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 70d84d01e1be87b459f7a10825966f3262b7dd34
+# latest from master as of 2025-11-16
+# CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 70d84d01e1be87b459f7a10825966f3262b7dd34
+CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 87e7ccb61cc7c1aaf7450b1f7a08f09ab7b3faf2
 
 git clone https://github.com/szpajder/libacars.git
 cmakebuild libacars v2.2.0
