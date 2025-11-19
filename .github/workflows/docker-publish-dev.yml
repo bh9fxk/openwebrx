@@ -43,28 +43,12 @@ jobs:
             org.opencontainers.image.title=Openwebrx-softmbe
             org.opencontainers.image.description="OpenWebRX + Digital codecs (mbelib), using codecserver-softmbe."
             org.opencontainers.image.vendor=BH9FXK
-      
-      - name: Build and load openwebrx-base (local only)
-        run: |
-          docker buildx build \
-            --load \
-            -t openwebrx-base:local \
-            -f docker/Dockerfiles/Dockerfile-base \
-            .
-      - name: Build openwebrx-full with buildx-compatible local base
-        run: |
-          docker buildx build \
-            --load \
-            -t ${{ steps.meta.outputs.tags }} \
-            -f docker/Dockerfiles/Dockerfile-full \
-            --build-arg BASE_IMAGE=openwebrx-base:local \
-            .
             
       - name: Build Full and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/Dockerfiles/Dockerfile-full
+          file: ./docker/Dockerfiles/Dockerfile-full-all
           platforms: linux/amd64,linux/arm/v7,linux/arm64/v8
           push: true
           tags: ${{ steps.meta.outputs.tags }}
