@@ -43,8 +43,14 @@ jobs:
             org.opencontainers.image.title=Openwebrx-softmbe
             org.opencontainers.image.description="OpenWebRX + Digital codecs (mbelib), using codecserver-softmbe."
             org.opencontainers.image.vendor=BH9FXK
-          
-      - name: Build and push Docker image
+      
+      - name: Build openwebrx-base (local only)
+        run: |
+          docker build \
+            -t openwebrx-base:local \
+            -f docker/Dockerfiles/Dockerfile-base \
+            
+      - name: Build Full and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -54,6 +60,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           #tags: bh9fxk/openwebrx-softmbe:latest
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BASE_IMAGE=openwebrx-base:local
           
       - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@v2
