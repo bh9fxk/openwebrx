@@ -124,9 +124,8 @@ rm -rf dump1090
 
 git clone https://github.com/merbanan/rtl_433.git
 # latest from master as of 2023-09-06
-CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 70d84d01e1be87b459f7a10825966f3262b7dd34
-# latest from master as of 2025-11-16
 # CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 70d84d01e1be87b459f7a10825966f3262b7dd34
+# latest from master as of 2025-11-16
 CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 87e7ccb61cc7c1aaf7450b1f7a08f09ab7b3faf2
 
 git clone https://github.com/szpajder/libacars.git
