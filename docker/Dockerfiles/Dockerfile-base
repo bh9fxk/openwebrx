@@ -10,7 +10,7 @@ RUN /install-dependencies.sh && \
     rm /install-dependencies.sh && \
     rm /*.patch
 COPY docker/scripts/integrate-softmbe-dev.sh /
-RUN chmod +x /direwolf-dev.sh rm && \
+RUN chmod +x /integrate-softmbe-dev.sh rm && \
     /integrate-softmbe-dev.sh
 COPY docker/scripts/install-owrx-tools.sh /
 RUN /install-owrx-tools.sh && \
