@@ -49,6 +49,7 @@ jobs:
           docker build \
             -t openwebrx-base:local \
             -f docker/Dockerfiles/Dockerfile-base \
+            .
             
       - name: Build Full and push Docker image
         uses: docker/build-push-action@v6
