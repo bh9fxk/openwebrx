@@ -1,5 +1,6 @@
-ARG BASE_IMAGE=openwebrx-base:dev-latest
-FROM ${BASE_IMAGE} AS base
+FROM bh9fxk/openwebrx-base:dev-latest
+
+LABEL OpenWebRX + Digital codecs (mbelib), using codecserver-softmbe.
 
 COPY docker/scripts/install-dependencies-*.sh \
      docker/files/sdrplay/install-lib.*.patch \
