@@ -1,6 +1,4 @@
-#ARG ARCHTAG
-#FROM openwebrx-base:$ARCHTAG
-ARG BASE_IMAGE=openwebrx-base:latest
+ARG BASE_IMAGE=openwebrx-base:dev-latest
 FROM ${BASE_IMAGE} AS base
 
 COPY docker/scripts/install-dependencies-*.sh \
@@ -28,6 +26,10 @@ RUN /install-dependencies-rtlsdr.sh &&\
     rm /install-dependencies-*.sh &&\
     rm /install-lib.*.patch && \
     rm /install-connectors.sh
+
+# insatall softmbe
+COPY integrate-softmbe-dev.sh /
+RUN /integrate-softmbe-dev.sh
 
 COPY docker/files/services/sdrplay /etc/services.d/sdrplay
 
