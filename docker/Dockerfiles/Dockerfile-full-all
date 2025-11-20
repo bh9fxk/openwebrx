@@ -1,4 +1,5 @@
-FROM debian:bookworm-slim
+# ---- Stage 1: base ----
+FROM debian:bookworm-slim AS openwebrx-base
 
 COPY docker/files/js8call/js8call-hamlib.patch \
      docker/files/wsjtx/wsjtx.patch \
@@ -15,6 +16,22 @@ RUN chmod +x /integrate-softmbe-dev.sh && \
 COPY docker/scripts/install-owrx-tools.sh /
 RUN /install-owrx-tools.sh && \
     rm /install-owrx-tools.sh
+COPY docker/files/services/codecserver /etc/services.d/codecserver
+
+ENTRYPOINT ["/init"]
+
+WORKDIR /opt/openwebrx
+
+VOLUME /etc/openwebrx
+VOLUME /var/lib/openwebrx
+
+ENV S6_CMD_ARG0="/opt/openwebrx/docker/scripts/run.sh"
+CMD [""]
+
+EXPOSE 8073
+
+# ---- Stage 2: full ----
+FROM openwebrx-base AS openwebrx-full
 
 COPY docker/scripts/install-dependencies-*.sh \
      docker/files/sdrplay/install-lib.*.patch \
@@ -42,21 +59,6 @@ RUN /install-dependencies-rtlsdr.sh &&\
     rm /install-lib.*.patch && \
     rm /install-connectors.sh
 
-COPY docker/files/services/codecserver /etc/services.d/codecserver
-
 COPY docker/files/services/sdrplay /etc/services.d/sdrplay
 
 ADD . /opt/openwebrx
-
-ENTRYPOINT ["/init"]
-
-WORKDIR /opt/openwebrx
-
-VOLUME /etc/openwebrx
-VOLUME /var/lib/openwebrx
-
-ENV S6_CMD_ARG0="/opt/openwebrx/docker/scripts/run.sh"
-CMD [""]
-
-EXPOSE 8073
-
