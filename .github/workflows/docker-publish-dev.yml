@@ -55,8 +55,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           #tags: bh9fxk/openwebrx-softmbe:latest
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            BASE_IMAGE=openwebrx-base:local
           
       - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@v2
