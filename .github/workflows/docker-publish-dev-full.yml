@@ -49,8 +49,8 @@ jobs:
         with:
           context: .
           file: ./docker/Dockerfiles/Dockerfile-full-1
-          platforms: linux/amd64,linux/arm/v7,linux/arm64/v8
-          # platforms: linux/arm/v7
+          # platforms: linux/amd64,linux/arm/v7,linux/arm64/v8
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
