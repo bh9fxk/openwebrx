@@ -1,74 +1,64 @@
-name: Publish Owrx dev base image
+name: 发布 OWRX 开发版基础镜像
 
 on:
-  workflow_dispatch:
-  #schedule:
-  #- cron: "30 19 * * *"
+  workflow_dispatch:      # 支持手动触发
+  # schedule:
+  #   - cron: "30 19 * * *"  # 如果需要每天北京时间 19:30 自动构建，可以取消注释
 
 jobs:
   push_to_registry:
-    name: Push Docker image to Docker Hub
+    name: 推送 Docker 镜像到 Docker Hub
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-      - name: Check out the repo
+      - name: 检出代码
         uses: actions/checkout@v5.0.1
 
-      - name: Set up QEMU
+      - name: 设置 QEMU（支持多架构构建）
         uses: docker/setup-qemu-action@v3.7.0
 
-      - name: Set up Docker Buildx
+      - name: 设置 Docker Buildx（多架构构建工具）
         uses: docker/setup-buildx-action@v3.11.1
 
-      - name: Log in to Docker Hub
+      - name: 登录 Docker Hub
         uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Extract metadata (tags, labels) for Docker
+      - name: 生成镜像标签和元数据
         id: meta
         uses: docker/metadata-action@v5.9.0
-        with: 
+        with:
           images: bh9fxk/openwebrx-base
+          flavor: |
+            latest=false
           tags: |
             type=raw,value=dev-latest
             type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}
-          labels: | 
+          labels: |
             maintainer=BH9FXK
-            org.opencontainers.image.title=Openwebrx-base
-            org.opencontainers.image.description="OpenWebRX base image."
+            org.opencontainers.image.title=OpenWebRX Base Image
+            org.opencontainers.image.description=OpenWebRX 开发版基础镜像（含 rtl-sdr、soapy 等依赖）
             org.opencontainers.image.vendor=BH9FXK
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
-      # 串行构建每个平台，并推送到同一个 manifest
-      - name: Build and push for each platform (serial)
-        run: |
-          TAGS="${{ steps.meta.outputs.tags }}"
-          LABELS="${{ steps.meta.outputs.labels }}"
-          PLATFORMS=("linux/amd64" "linux/arm/v7" "linux/arm64/v8")
-          
-          # 创建一个临时的 builder 实例（可选，但推荐）
-          BUILDER_NAME="serial-builder"
-          docker buildx create --name "$BUILDER_NAME" --use --bootstrap
+      - name: 构建并推送多架构镜像
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          file: ./docker/Dockerfiles/Dockerfile-base
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=bh9fxk/openwebrx-base:dev-latest
+          cache-to: type=inline
 
-          # 构建每个平台并推送到临时标签
-          for platform in "${PLATFORMS[@]}"; do
-            echo "Building for $platform..."
-            TEMP_TAG="bh9fxk/openwebrx-base:temp-${platform//\//-}"
-            docker buildx build \
-              --platform "$platform" \
-              --file ./docker/Dockerfiles/Dockerfile-base \
-              --tag "$TEMP_TAG" \
-              --output "type=image,push=true" \
-              --label "$LABELS" \
-              .
-          done
-
-          # 合并所有平台为一个 manifest（覆盖最终标签）
-          echo "Creating multi-arch manifest..."
-          docker buildx imagetools create $(echo "$TAGS" | tr ',' ' ') \
-            $(for p in "${PLATFORMS[@]}"; do echo "bh9fxk/openwebrx-base:temp-${p//\//-}"; done)
-
-      - name: Delete workflow runs
+      - name: 清理旧的 workflow runs（只保留最近 2 次）
         uses: Mattraks/delete-workflow-runs@v2
         with:
           token: ${{ github.token }}
