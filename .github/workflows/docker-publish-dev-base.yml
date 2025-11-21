@@ -42,7 +42,6 @@ jobs:
       # 串行构建每个平台，并推送到同一个 manifest
       - name: Build and push for each platform (serial)
         run: |
-          set -e
           TAGS="${{ steps.meta.outputs.tags }}"
           LABELS="${{ steps.meta.outputs.labels }}"
           PLATFORMS=("linux/amd64" "linux/arm/v7" "linux/arm64/v8")
