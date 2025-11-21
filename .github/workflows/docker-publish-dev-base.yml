@@ -9,9 +9,6 @@ jobs:
   push_to_registry:
     name: 推送 Docker 镜像到 Docker Hub
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - name: 检出代码
@@ -59,8 +56,8 @@ jobs:
           cache-from: type=registry,ref=bh9fxk/openwebrx-base:dev-latest
           cache-to: type=inline
 
-      - name: 清理旧的 workflow runs（只保留最近 2 次）
-        uses: Mattraks/delete-workflow-runs@v2
+      - name: 清理旧的 workflow runs
+        uses: Mattraks/delete-workflow-runs@v2.1.0
         with:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
