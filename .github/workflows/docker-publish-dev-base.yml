@@ -18,13 +18,13 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.11.1
-      
+
       - name: Log in to Docker Hub
         uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-                    
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5.9.0
@@ -38,17 +38,37 @@ jobs:
             org.opencontainers.image.title=Openwebrx-base
             org.opencontainers.image.description="OpenWebRX base image."
             org.opencontainers.image.vendor=BH9FXK
-            
-      - name: Build base and push Docker image
-        uses: docker/build-push-action@v6.18.0
-        with:
-          context: .
-          file: ./docker/Dockerfiles/Dockerfile-base
-          platforms: linux/amd64,linux/arm/v7,linux/arm64/v8
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+
+      # 串行构建每个平台，并推送到同一个 manifest
+      - name: Build and push for each platform (serial)
+        run: |
+          set -e
+          TAGS="${{ steps.meta.outputs.tags }}"
+          LABELS="${{ steps.meta.outputs.labels }}"
+          PLATFORMS=("linux/amd64" "linux/arm/v7" "linux/arm64/v8")
           
+          # 创建一个临时的 builder 实例（可选，但推荐）
+          BUILDER_NAME="serial-builder"
+          docker buildx create --name "$BUILDER_NAME" --use --bootstrap
+
+          # 构建每个平台并推送到临时标签
+          for platform in "${PLATFORMS[@]}"; do
+            echo "Building for $platform..."
+            TEMP_TAG="bh9fxk/openwebrx-base:temp-${platform//\//-}"
+            docker buildx build \
+              --platform "$platform" \
+              --file ./docker/Dockerfiles/Dockerfile-base \
+              --tag "$TEMP_TAG" \
+              --output "type=image,push=true" \
+              --label "$LABELS" \
+              .
+          done
+
+          # 合并所有平台为一个 manifest（覆盖最终标签）
+          echo "Creating multi-arch manifest..."
+          docker buildx imagetools create $(echo "$TAGS" | tr ',' ' ') \
+            $(for p in "${PLATFORMS[@]}"; do echo "bh9fxk/openwebrx-base:temp-${p//\//-}"; done)
+
       - name: Delete workflow runs
         uses: Mattraks/delete-workflow-runs@v2
         with:
