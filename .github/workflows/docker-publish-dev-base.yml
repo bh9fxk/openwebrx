@@ -1,24 +1,48 @@
-name: 发布 OWRX 开发版基础镜像
+name: 发布 OWRX 开发版基础镜像（分阶段提速）
 
 on:
-  workflow_dispatch:      # 支持手动触发
-  # schedule:
-  #   - cron: "30 19 * * *"  # 如果需要每天北京时间 19:30 自动构建，可以取消注释
+  workflow_dispatch:
+  #  inputs:
+  #    force_armv7:
+  #      description: '强制立即构建 arm/v7（默认只在每周日或手动时构建）'
+  #      required: false
+  #      default: 'false'
+  #      type: boolean
+  #schedule:
+  #  - cron: '0 12 * * *'     # 每天北京时间 20:00 自动快建 amd64+arm64
+  #  - cron: '0 13 * * 0'     # 每周日北京时间 21:00 自动完整构建（含 arm/v7）
 
 jobs:
-  push_to_registry:
-    name: 推送 Docker 镜像到 Docker Hub
+  # ====================== 阶段1：快速构建 amd64 + arm64 ======================
+  fast-build:
+    name: 快速构建 amd64 + arm64
     runs-on: ubuntu-latest
-
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+      cache_key: ${{ steps.cache_key.outputs.key }}
     steps:
       - name: 检出代码
         uses: actions/checkout@v5.0.1
 
-      - name: 设置 QEMU（支持多架构构建）
-        uses: docker/setup-qemu-action@v3.7.0
+      - name: 生成缓存键（基于 Dockerfile 和关键文件）
+        id: cache_key
+        run: |
+          echo "key=dev-cache-$(date +%Y%m%d)-$(sha256sum docker/Dockerfiles/Dockerfile-base | cut -c1-12)" >> $GITHUB_OUTPUT
 
-      - name: 设置 Docker Buildx（多架构构建工具）
-        uses: docker/setup-buildx-action@v3.11.1
+      - name: 生成标签和元数据
+        id: meta
+        uses: docker/metadata-action@v5.9.0
+        with:
+          images: bh9fxk/openwebrx-base
+          flavor: latest=false
+          tags: |
+            type=raw,value=dev-latest
+            type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}
+
+      - name: 设置 QEMU & Buildx
+        uses: docker/setup-qemu-action@v3.7.0
+      - uses: docker/setup-buildx-action@v3.11.1
 
       - name: 登录 Docker Hub
         uses: docker/login-action@v3.6.0
@@ -26,38 +50,88 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 生成镜像标签和元数据
-        id: meta
-        uses: docker/metadata-action@v5.9.0
-        with:
-          images: bh9fxk/openwebrx-base
-          flavor: |
-            latest=false
-          tags: |
-            type=raw,value=dev-latest
-            type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}
-          labels: |
-            maintainer=BH9FXK
-            org.opencontainers.image.title=OpenWebRX Base Image
-            org.opencontainers.image.description=OpenWebRX 开发版基础镜像（含 rtl-sdr、soapy 等依赖）
-            org.opencontainers.image.vendor=BH9FXK
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-
-      - name: 构建并推送多架构镜像
+      - name: 构建并推送 amd64 + arm64（超快）
         uses: docker/build-push-action@v6.18.0
         with:
           context: .
           file: ./docker/Dockerfiles/Dockerfile-base
-          platforms: linux/amd64,linux/arm/v7,linux/arm64
-          # platforms: linux/arm/v7
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
           sbom: false
-          cache-from: type=registry,ref=bh9fxk/openwebrx-base:dev-cache
-          cache-to: type=registry,ref=bh9fxk/openwebrx-base:dev-cache,mode=max
+          cache-from: type=registry,ref=bh9fxk/openwebrx-base:dev-cache-fast
+          cache-to: type=registry,ref=bh9fxk/openwebrx-base:dev-cache-fast,mode=max
 
+  # ====================== 阶段2：仅 arm/v7（慢的单独跑） ======================
+  armv7-build:
+    name: 单独构建 linux/arm/v7
+    needs: fast-build
+    if: >
+      github.event_name == 'workflow_dispatch' && github.event.inputs.force_armv7 == 'true' ||
+      github.event_name == 'schedule' && github.day_of_week == 'Sunday'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v5.0.1
+
+      - name: 设置 QEMU & Buildx
+        uses: docker/setup-qemu-action@v3.7.0
+      - uses: docker/setup-buildx-action@v3.11.1
+
+      - name: 登录 Docker Hub
+        uses: docker/login-action@v3.6.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 仅构建并推送 arm/v7
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          file: ./docker/Dockerfiles/Dockerfile-base
+          platforms: linux/arm/v7
+          push: true
+          tags: ${{ needs.fast-build.outputs.tags }}
+          labels: ${{ needs.fast-build.outputs.labels }}
+          provenance: false
+          sbom: false
+          cache-from: type=registry,ref=bh9fxk/openwebrx-base:dev-cache-armv7
+          cache-to: type=registry,ref=bh9fxk/openwebrx-base:dev-cache-armv7,mode=max
+
+  # ====================== 阶段3：创建完整的 multi-arch manifest ======================
+  create-manifest:
+    name: 创建完整 multi-arch 镜像
+    needs: [fast-build, armv7-build]
+    if: always() && needs.armv7-build.result == 'success' || needs.armv7-build.result == 'skipped'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 登录 Docker Hub
+        uses: docker/login-action@v3.6.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: 创建并推送最终 multi-arch manifest
+        run: |
+          docker buildx imagetools create \
+            --tag bh9fxk/openwebrx-base:${{ needs.fast-build.outputs.tags }} \
+            bh9fxk/openwebrx-base:${{ needs.fast-build.outputs.tags }}-amd64 \
+            bh9fxk/openwebrx-base:${{ needs.fast-build.outputs.tags }}-arm64 \
+            bh9fxk/openwebrx-base:${{ needs.fast-build.outputs.tags }}-arm/v7 || true
+            
+          # 同时更新 dev-latest（最重要）
+          docker buildx imagetools create \
+            bh9fxk/openwebrx-base:dev-latest \
+            bh9fxk/openwebrx-base:${{ needs.fast-build.outputs.tags }}
+
+
+  delete-old-workflow-runs:
+    name: 清理旧的 workflow runs
+    needs: [fast-build, armv7-build, create-manifest]
+    runs-on: ubuntu-latest
+    steps: 
       - name: 清理旧的 workflow runs
         uses: Mattraks/delete-workflow-runs@v2.1.0
         with:
