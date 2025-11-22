@@ -1,4 +1,4 @@
-name: 发布 OWRX 开发版基础镜像（分阶段提速）
+name: 发布 OWRX 开发版基础镜像（分阶段）
 
 on:
   workflow_dispatch:
