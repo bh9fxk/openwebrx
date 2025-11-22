@@ -40,8 +40,9 @@ jobs:
             type=raw,value=dev-latest
             type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}
 
-      - name: 设置 QEMU & Buildx
+      - name: 设置 QEMU
         uses: docker/setup-qemu-action@v3.7.0
+      - name: 设置 Buildx
       - uses: docker/setup-buildx-action@v3.11.1
 
       - name: 登录 Docker Hub
