@@ -1,10 +1,4 @@
-# 此工作流使用未经 GitHub 认证的操作。它们由第三方提供，并受单独的服务条款、隐私政策和支持文档。
-
-# GitHub 建议将操作固定到提交 SHA。
-# 若要获取较新版本，需要更新 SHA。还可以引用标记或分支，但该操作可能会更改而不发出警告。
-
-name: Publish Owrx dev full image
-
+name: 发布Owrx开发版完整镜像
 on:
   workflow_dispatch:
   #schedule:
@@ -12,27 +6,27 @@ on:
 
 jobs:
   push_to_registry:
-    name: Push Docker image to Docker Hub
+    name: 推送 Docker 镜像到 Docker Hub
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v5
+      - name: 检出代码
+        uses: actions/checkout@v5.0.1
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+      - name: 设置 QEMU（支持多架构构建）
+        uses: docker/setup-qemu-action@v3.7.0
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: 设置 Docker Buildx（多架构构建工具）
+        uses: docker/setup-buildx-action@v3.11.1
       
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: 登录 Docker Hub
+        uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.DOCKER_PASSWORD }} 
                     
-      - name: Extract metadata (tags, labels) for Docker
+      - name: 生成镜像标签和元数据
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v5.9.0
         with: 
           images: bh9fxk/openwebrx-softmbe
           tags: |
@@ -44,8 +38,8 @@ jobs:
             org.opencontainers.image.description="OpenWebRX + Digital codecs (mbelib), using codecserver-softmbe."
             org.opencontainers.image.vendor=BH9FXK
             
-      - name: Build Full and push Docker image
-        uses: docker/build-push-action@v6
+      - name: 构建并推送多架构镜像
+        uses: docker/build-push-action@v6.18.0
         with:
           context: .
           file: ./docker/Dockerfiles/Dockerfile-full-1
@@ -53,9 +47,11 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
+          sbom: false
           
-      - name: Delete workflow runs
-        uses: Mattraks/delete-workflow-runs@v2
+      - name: 清理旧的 workflow runs
+        uses: Mattraks/delete-workflow-runs@v2.1.0
         with:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
