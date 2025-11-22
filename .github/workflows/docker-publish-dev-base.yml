@@ -48,13 +48,15 @@ jobs:
         with:
           context: .
           file: ./docker/Dockerfiles/Dockerfile-base
-          # platforms: linux/amd64,linux/arm/v7,linux/arm64
-          platforms: linux/arm/v7
+          platforms: linux/amd64,linux/arm/v7,linux/arm64
+          # platforms: linux/arm/v7
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=bh9fxk/openwebrx-base:dev-latest
-          cache-to: type=inline
+          provenance: false
+          sbom: false
+          cache-from: type=registry,ref=bh9fxk/openwebrx-base:dev-cache
+          cache-to: type=registry,ref=bh9fxk/openwebrx-base:dev-cache,mode=max
 
       - name: 清理旧的 workflow runs
         uses: Mattraks/delete-workflow-runs@v2.1.0
