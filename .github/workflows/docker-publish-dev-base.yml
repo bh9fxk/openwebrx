@@ -1,36 +1,36 @@
-name: 发布 OWRX 开发版基础镜像（分阶段）
+name: 发布 OWRX 开发版基础镜像
 
 on:
-  workflow_dispatch:
-  #  inputs:
-  #    force_armv7:
-  #      description: '强制立即构建 arm/v7（默认只在每周日或手动时构建）'
-  #      required: false
-  #      default: 'false'
-  #      type: boolean
-  #schedule:
-  #  - cron: '0 12 * * *'     # 每天北京时间 20:00 自动快建 amd64+arm64
-  #  - cron: '0 13 * * 0'     # 每周日北京时间 21:00 自动完整构建（含 arm/v7）
+  workflow_dispatch:     # 手动触发时可选择只跑哪些平台
+    inputs:
+      build_amd64:
+        description: '构建 amd64（默认是）'
+        required: true
+        default: 'true'
+        type: boolean
+      build_arm64:
+        description: '构建 arm64（默认是）'
+        required: true
+        default: 'true'
+        type: boolean
+      build_armv7:
+        description: '构建 arm/v7（默认否，慢！）'
+        required: true
+        default: 'false'
+        type: boolean
 
 jobs:
-  # ====================== 阶段1：快速构建 amd64 + arm64 ======================
-  fast-build:
-    name: 快速构建 amd64 + arm64
+  # ====================== 阶段1：amd64（最快，永远先跑） ======================
+  amd64:
+    if: github.event.inputs.build_amd64 == 'true' || github.event_name != 'workflow_dispatch'
+    name: Build amd64
     runs-on: ubuntu-latest
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
       labels: ${{ steps.meta.outputs.labels }}
-      cache_key: ${{ steps.cache_key.outputs.key }}
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v5.0.1
-
-      - name: 生成缓存键（基于 Dockerfile 和关键文件）
-        id: cache_key
-        run: |
-          echo "key=dev-cache-$(date +%Y%m%d)-$(sha256sum docker/Dockerfiles/Dockerfile-base | cut -c1-12)" >> $GITHUB_OUTPUT
-
-      - name: 生成标签和元数据
+      - uses: actions/checkout@v5.0.1
+      - name: 生成统一标签（所有平台共用）
         id: meta
         uses: docker/metadata-action@v5.9.0
         with:
@@ -39,102 +39,112 @@ jobs:
           tags: |
             type=raw,value=dev-latest
             type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}
-
-      - name: 设置 QEMU
-        uses: docker/setup-qemu-action@v3.7.0
-      - name: 设置 Buildx
       - uses: docker/setup-buildx-action@v3.11.1
-
-      - name: 登录 Docker Hub
-        uses: docker/login-action@v3.6.0
+      - uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: 构建并推送 amd64 + arm64（超快）
+      - name: Build & push amd64
         uses: docker/build-push-action@v6.18.0
         with:
           context: .
           file: ./docker/Dockerfiles/Dockerfile-base
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
           sbom: false
-          cache-from: type=registry,ref=bh9fxk/openwebrx-base:dev-cache-fast
-          cache-to: type=registry,ref=bh9fxk/openwebrx-base:dev-cache-fast,mode=max
+          cache-from: type=registry,ref=bh9fxk/openwebrx-base:cache-amd64
+          cache-to: type=registry,ref=bh9fxk/openwebrx-base:cache-amd64,mode=max
 
-  # ====================== 阶段2：仅 arm/v7（慢的单独跑） ======================
-  armv7-build:
-    name: 单独构建 linux/arm/v7
-    needs: fast-build
-    if: >
-      github.event_name == 'workflow_dispatch' && github.event.inputs.force_armv7 == 'true' ||
-      github.event_name == 'schedule' && github.day_of_week == 'Sunday'
+  # ====================== 阶段2：arm64（中等速度） ======================
+  arm64:
+    if: github.event.inputs.build_arm64 == 'true' || github.event_name != 'workflow_dispatch'
+    needs: amd64
+    name: Build arm64
     runs-on: ubuntu-latest
     steps:
-      - name: 检出代码
-        uses: actions/checkout@v5.0.1
-
-      - name: 设置 QEMU & Buildx
-        uses: docker/setup-qemu-action@v3.7.0
+      - uses: actions/checkout@v5.0.1
+      - uses: docker/setup-qemu-action@v3.7.0
       - uses: docker/setup-buildx-action@v3.11.1
-
-      - name: 登录 Docker Hub
-        uses: docker/login-action@v3.6.0
+      - uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build & push arm64
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          file: ./docker/Dockerfiles/Dockerfile-base
+          platforms: linux/arm64
+          push: true
+          tags: ${{ needs.amd64.outputs.tags }}
+          labels: ${{ needs.amd64.outputs.labels }}
+          provenance: false
+          sbom: false
+          cache-from: type=registry,ref=bh9fxk/openwebrx-base:cache-arm64
+          cache-to: type=registry,ref=bh9fxk/openwebrx-base:cache-arm64,mode=max
 
-      - name: 仅构建并推送 arm/v7
+  # ====================== 阶段3：arm/v7（最慢，彻底隔离） ======================
+  armv7:
+    if: github.event.inputs.build_armv7 == 'true'
+    needs: amd64
+    name: Build arm/v7（慢！）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5.0.1
+      - uses: docker/setup-qemu-action@v3.7.0
+      - uses: docker/setup-buildx-action@v3.11.1
+      - uses: docker/login-action@v3.6.0
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Build & push arm/v7
         uses: docker/build-push-action@v6.18.0
         with:
           context: .
           file: ./docker/Dockerfiles/Dockerfile-base
           platforms: linux/arm/v7
           push: true
-          tags: ${{ needs.fast-build.outputs.tags }}
-          labels: ${{ needs.fast-build.outputs.labels }}
+          tags: ${{ needs.amd64.outputs.tags }}
+          labels: ${{ needs.amd64.outputs.labels }}
           provenance: false
           sbom: false
-          cache-from: type=registry,ref=bh9fxk/openwebrx-base:dev-cache-armv7
-          cache-to: type=registry,ref=bh9fxk/openwebrx-base:dev-cache-armv7,mode=max
+          cache-from: type=registry,ref=bh9fxk/openwebrx-base:cache-armv7
+          cache-to: type=registry,ref=bh9fxk/openwebrx-base:cache-armv7,mode=max
 
-  # ====================== 阶段3：创建完整的 multi-arch manifest ======================
-  create-manifest:
-    name: 创建完整 multi-arch 镜像
-    needs: [fast-build, armv7-build]
-    if: always() && needs.armv7-build.result == 'success' || needs.armv7-build.result == 'skipped'
+  # ====================== 阶段4：合并成最终 multi-arch 镜像 ======================
+  manifest:
+    needs: [amd64, arm64, armv7]
+    if: always() && (needs.armv7.result == 'success' || needs.armv7.result == 'skipped')
+    name: Create multi-arch manifest
     runs-on: ubuntu-latest
     steps:
-      - name: 登录 Docker Hub
-        uses: docker/login-action@v3.6.0
+      - uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: 创建并推送最终 multi-arch manifest
+      - name: Create and push manifest
         run: |
-          docker buildx imagetools create \
-            --tag bh9fxk/openwebrx-base:${{ needs.fast-build.outputs.tags }} \
-            bh9fxk/openwebrx-base:${{ needs.fast-build.outputs.tags }}-amd64 \
-            bh9fxk/openwebrx-base:${{ needs.fast-build.outputs.tags }}-arm64 \
-            bh9fxk/openwebrx-base:${{ needs.fast-build.outputs.tags }}-arm/v7 || true
-            
-          # 同时更新 dev-latest（最重要）
-          docker buildx imagetools create \
-            bh9fxk/openwebrx-base:dev-latest \
-            bh9fxk/openwebrx-base:${{ needs.fast-build.outputs.tags }}
+          TAGS="${{ needs.amd64.outputs.tags }}"
+          for TAG in $(echo $TAGS | tr "," "\n"); do
+            echo "=== Creating manifest for $TAG ==="
+            docker buildx imagetools create -t "bh9fxk/openwebrx-base:$TAG" \
+              "bh9fxk/openwebrx-base:$TAG"
+          done
 
+          # 特别更新 dev-latest（最重要！）
+          docker buildx imagetools create bh9fxk/openwebrx-base:dev-latest \
+            bh9fxk/openwebrx-base:$(echo $TAGS | cut -d',' -f1 | cut -d'=' -f2)
 
-  delete-old-workflow-runs:
-    name: 清理旧的 workflow runs
-    needs: [fast-build, armv7-build, create-manifest]
+  # ====================== 清理旧 runs ======================
+  cleanup:
+    needs: manifest
+    name: 清理旧 workflow runs
     runs-on: ubuntu-latest
-    steps: 
-      - name: 清理旧的 workflow runs
-        uses: Mattraks/delete-workflow-runs@v2.1.0
+    steps:
+      - uses: Mattraks/delete-workflow-runs@v2.1.0
         with:
           token: ${{ github.token }}
           repository: ${{ github.repository }}
