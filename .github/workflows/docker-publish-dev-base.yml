@@ -22,6 +22,7 @@ on:
 # 第一步：生成北京时间戳，所有 job 共享
 jobs:
   init:
+    name: 生成时间戳
     runs-on: ubuntu-latest
     outputs:
       timestamp: ${{ steps.set.outputs.timestamp }}
