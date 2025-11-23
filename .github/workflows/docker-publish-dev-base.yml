@@ -53,6 +53,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          flavor: |
+            suffix=-amd64          # 关键！加上后缀
           provenance: false
           sbom: false
           cache-from: type=registry,ref=bh9fxk/openwebrx-base:cache-amd64
@@ -81,6 +83,8 @@ jobs:
           push: true
           tags: ${{ needs.amd64.outputs.tags }}
           labels: ${{ needs.amd64.outputs.labels }}
+          flavor: |
+            suffix=-arm64          # 关键！加上后缀
           provenance: false
           sbom: false
           cache-from: type=registry,ref=bh9fxk/openwebrx-base:cache-arm64
@@ -109,6 +113,8 @@ jobs:
           push: true
           tags: ${{ needs.amd64.outputs.tags }}
           labels: ${{ needs.amd64.outputs.labels }}
+          flavor: |
+            suffix=--armv7          # 关键！加上后缀
           provenance: false
           sbom: false
           cache-from: type=registry,ref=bh9fxk/openwebrx-base:cache-armv7
