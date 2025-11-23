@@ -171,25 +171,21 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 合并并强制更新 multi-arch 镜像
+      - name: 使用 buildx imagetools
         run: |
           SOURCES=""
           [[ "${{ needs.amd64.result }}" == "success" ]] && SOURCES="$SOURCES bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}-amd64"
           [[ "${{ needs.arm64.result }}" == "success" ]] && SOURCES="$SOURCES bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}-arm64"
           [[ "${{ needs.armv7.result }}" == "success" ]] && SOURCES="$SOURCES bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}-armv7"
 
-          echo "本次构建的平台镜像: $SOURCES"
+          echo "本次参与合并的镜像: $SOURCES"
 
-          # 第1步：创建时间戳 multi-arch（这一步几乎不会失败）
-          docker manifest create bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }} $SOURCES --amend
-          docker manifest push bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}
+          # 直接用 imagetools create 强制覆盖
+          docker buildx imagetools create -t bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }} $SOURCES
 
-          # 第2步：强制用时间戳镜像完全覆盖 dev-latest（关键！）
-          # 直接复制整个 manifest list，彻底避开所有 create 冲突
-          docker manifest rm bh9fxk/openwebrx-base:${{ env.LATEST_TAG }} || true
-          docker manifest create bh9fxk/openwebrx-base:${{ env.LATEST_TAG }} \
-            bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }} --amend
-          docker manifest push bh9fxk/openwebrx-base:${{ env.LATEST_TAG }}
+          # 再把 dev-latest 也强制指向这次构建
+          docker buildx imagetools create -t bh9fxk/openwebrx-base:${{ env.LATEST_TAG }} \
+            bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}
 
           echo "multi-arch 镜像发布成功！"
           echo "时间戳标签 → bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}"
