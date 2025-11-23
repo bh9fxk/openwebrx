@@ -1,4 +1,4 @@
-name: 发布 OWRX 开发版基础镜像
+name: 发布 OWRX 开发版基础镜像（三平台完全分离）
 
 on:
   workflow_dispatch:     # 手动触发时可选择只跑哪些平台
@@ -22,7 +22,7 @@ on:
 jobs:
   # ====================== 阶段1：amd64（最快，永远先跑） ======================
   amd64:
-    if: github.event.inputs.build_amd64 == 'true' || github.event_name != 'workflow_dispatch'
+    if: ${{ github.event.inputs.build_amd64 == 'true' || github.event_name != 'workflow_dispatch' }}
     name: Build amd64
     runs-on: ubuntu-latest
     outputs:
@@ -30,20 +30,27 @@ jobs:
       labels: ${{ steps.meta.outputs.labels }}
     steps:
       - uses: actions/checkout@v5.0.1
-      - name: 生成统一标签（所有平台共用）
+
+      - name: 生成 amd64 专属标签
         id: meta
         uses: docker/metadata-action@v5.9.0
         with:
           images: bh9fxk/openwebrx-base
-          flavor: latest=false
-          tags: |
-            type=raw,value=dev-latest
-            type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}
+          render: |
+            # amd64 专属标签：dev-latest-amd64 和时间戳-amd64
+            type=raw,value=dev-latest-amd64
+            type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}-amd64
+          labels: |
+            maintainer=BH9FXK
+            org.opencontainers.image.title=OpenWebRX Base Image (amd64)
+
       - uses: docker/setup-buildx-action@v3.11.1
+
       - uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Build & push amd64
         uses: docker/build-push-action@v6.18.0
         with:
@@ -53,8 +60,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          flavor: |
-            suffix=-amd64          # 关键！加上后缀
           provenance: false
           sbom: false
           cache-from: type=registry,ref=bh9fxk/openwebrx-base:cache-amd64
@@ -62,18 +67,38 @@ jobs:
 
   # ====================== 阶段2：arm64（中等速度） ======================
   arm64:
-    if: github.event.inputs.build_arm64 == 'true' || github.event_name != 'workflow_dispatch'
+    if: ${{ github.event.inputs.build_arm64 == 'true' || github.event_name != 'workflow_dispatch' }}
     needs: amd64
     name: Build arm64
     runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
     steps:
       - uses: actions/checkout@v5.0.1
+
       - uses: docker/setup-qemu-action@v3.7.0
+
+      - name: 生成 arm64 专属标签
+        id: meta
+        uses: docker/metadata-action@v5.9.0
+        with:
+          images: bh9fxk/openwebrx-base
+          render: |
+            # arm64 专属标签：dev-latest-arm64 和时间戳-arm64
+            type=raw,value=dev-latest-arm64
+            type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}-arm64
+          labels: |
+            maintainer=BH9FXK
+            org.opencontainers.image.title=OpenWebRX Base Image (arm64)
+
       - uses: docker/setup-buildx-action@v3.11.1
+
       - uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Build & push arm64
         uses: docker/build-push-action@v6.18.0
         with:
@@ -81,10 +106,8 @@ jobs:
           file: ./docker/Dockerfiles/Dockerfile-base
           platforms: linux/arm64
           push: true
-          tags: ${{ needs.amd64.outputs.tags }}
-          labels: ${{ needs.amd64.outputs.labels }}
-          flavor: |
-            suffix=-arm64          # 关键！加上后缀
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           provenance: false
           sbom: false
           cache-from: type=registry,ref=bh9fxk/openwebrx-base:cache-arm64
@@ -92,18 +115,38 @@ jobs:
 
   # ====================== 阶段3：arm/v7（最慢，彻底隔离） ======================
   armv7:
-    if: github.event.inputs.build_armv7 == 'true'
+    if: ${{ github.event.inputs.build_armv7 == 'true' }}
     needs: amd64
     name: Build arm/v7（慢！）
     runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
     steps:
       - uses: actions/checkout@v5.0.1
+
       - uses: docker/setup-qemu-action@v3.7.0
+
+      - name: 生成 armv7 专属标签
+        id: meta
+        uses: docker/metadata-action@v5.9.0
+        with:
+          images: bh9fxk/openwebrx-base
+          render: |
+            # armv7 专属标签：dev-latest-armv7 和时间戳-armv7
+            type=raw,value=dev-latest-armv7
+            type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}-armv7
+          labels: |
+            maintainer=BH9FXK
+            org.opencontainers.image.title=OpenWebRX Base Image (armv7)
+
       - uses: docker/setup-buildx-action@v3.11.1
+
       - uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
       - name: Build & push arm/v7
         uses: docker/build-push-action@v6.18.0
         with:
@@ -111,56 +154,57 @@ jobs:
           file: ./docker/Dockerfiles/Dockerfile-base
           platforms: linux/arm/v7
           push: true
-          tags: ${{ needs.amd64.outputs.tags }}
-          labels: ${{ needs.amd64.outputs.labels }}
-          flavor: |
-            suffix=--armv7          # 关键！加上后缀
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           provenance: false
           sbom: false
           cache-from: type=registry,ref=bh9fxk/openwebrx-base:cache-armv7
           cache-to: type=registry,ref=bh9fxk/openwebrx-base:cache-armv7,mode=max
+
+  # ====================== 阶段4：合并成最终 multi-arch 镜像 ======================
   manifest:
     needs: [amd64, arm64, armv7]
     if: always() && (needs.armv7.result == 'success' || needs.armv7.result == 'skipped')
-    name: Create multi-arch manifest（最终稳版）
+    name: Create multi-arch manifest
     runs-on: ubuntu-latest
     steps:
-      - name: 登录 Docker Hub
-        uses: docker/login-action@v3.6.0
+      - uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 合并 multi-arch manifest
+      - name: 合并并创建通用 multi-arch 标签
         run: |
-          TAGS="${{ needs.amd64.outputs.tags }}"
-          
-          echo "$TAGS" | tr ',' '\n' | while IFS= read -r TAG; do
-            echo "处理标签: $TAG"
-            
-            SOURCES=""
-            [[ "${{ needs.amd64.result }}" == "success" ]] && SOURCES="$SOURCES $TAG-amd64"
-            [[ "${{ needs.arm64.result }}" == "success" ]] && SOURCES="$SOURCES $TAG-arm64"
-            [[ "${{ needs.armv7.result }}" == "success" ]] && SOURCES="$SOURCES $TAG-armv7"
-            
-            if [ -n "$SOURCES" ]; then
-              echo "创建 manifest → $TAG"
-              docker manifest create "$TAG" $SOURCES --amend
-              docker manifest push "$TAG"
-            fi
-          done
+          # 拿到当前时间戳（所有平台的时间戳应该一致，用 amd64 的作为基准）
+          TIMESTAMP_TAG=$(echo "${{ needs.amd64.outputs.tags }}" | grep -o 'dev-[0-9]\{8\}-[0-9]\{6\}' | head -1)
+          LATEST_TAG="dev-latest"
 
-          # 强制把 dev-latest 指向最新的时间戳标签
-          LATEST_TAG=$(echo "$TAGS" | tr ',' '\n' | grep -E 'dev-[0-9]{8}-[0-9]{6}$' | head -1)
-          if [ -n "$LATEST_TAG" ]; then
-            echo "更新 dev-latest → $LATEST_TAG"
-            docker manifest create bh9fxk/openwebrx-base:dev-latest "$LATEST_TAG" --amend
-            docker manifest push bh9fxk/openwebrx-base:dev-latest
+          echo "基准时间戳标签: $TIMESTAMP_TAG"
+
+          # 构建来源列表（只用实际成功的平台）
+          SOURCES=""
+          [[ "${{ needs.amd64.result }}" == "success" ]] && SOURCES="$SOURCES bh9fxk/openwebrx-base:$TIMESTAMP_TAG-amd64"
+          [[ "${{ needs.arm64.result }}" == "success" ]] && SOURCES="$SOURCES bh9fxk/openwebrx-base:$TIMESTAMP_TAG-arm64"
+          [[ "${{ needs.armv7.result }}" == "success" ]] && SOURCES="$SOURCES bh9fxk/openwebrx-base:$TIMESTAMP_TAG-armv7"
+
+          echo "来源镜像: $SOURCES"
+
+          if [ -n "$SOURCES" ]; then
+            # 先合并时间戳标签
+            echo "创建 multi-arch: bh9fxk/openwebrx-base:$TIMESTAMP_TAG"
+            docker manifest create "bh9fxk/openwebrx-base:$TIMESTAMP_TAG" $SOURCES
+            docker manifest push "bh9fxk/openwebrx-base:$TIMESTAMP_TAG"
+
+            # 再创建/更新 dev-latest（指向时间戳标签）
+            echo "创建/更新 multi-arch: bh9fxk/openwebrx-base:$LATEST_TAG"
+            docker manifest create "bh9fxk/openwebrx-base:$LATEST_TAG" "bh9fxk/openwebrx-base:$TIMESTAMP_TAG"
+            docker manifest push "bh9fxk/openwebrx-base:$LATEST_TAG"
           fi
-          
+
   # ====================== 清理旧 runs ======================
   cleanup:
-    needs: manifest
+    needs: [amd64, arm64, armv7, manifest]
+    if: always()
     name: 清理旧 workflow runs
     runs-on: ubuntu-latest
     steps:
