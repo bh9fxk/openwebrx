@@ -36,7 +36,7 @@ jobs:
         uses: docker/metadata-action@v5.9.0
         with:
           images: bh9fxk/openwebrx-base
-          render: |
+          tags: |
             # amd64 专属标签：dev-latest-amd64 和时间戳-amd64
             type=raw,value=dev-latest-amd64
             type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}-amd64
@@ -76,7 +76,6 @@ jobs:
       labels: ${{ steps.meta.outputs.labels }}
     steps:
       - uses: actions/checkout@v5.0.1
-
       - uses: docker/setup-qemu-action@v3.7.0
 
       - name: 生成 arm64 专属标签
@@ -84,7 +83,7 @@ jobs:
         uses: docker/metadata-action@v5.9.0
         with:
           images: bh9fxk/openwebrx-base
-          render: |
+          tags: |
             # arm64 专属标签：dev-latest-arm64 和时间戳-arm64
             type=raw,value=dev-latest-arm64
             type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}-arm64
@@ -93,7 +92,7 @@ jobs:
             org.opencontainers.image.title=OpenWebRX Base Image (arm64)
 
       - uses: docker/setup-buildx-action@v3.11.1
-
+      
       - uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -124,7 +123,6 @@ jobs:
       labels: ${{ steps.meta.outputs.labels }}
     steps:
       - uses: actions/checkout@v5.0.1
-
       - uses: docker/setup-qemu-action@v3.7.0
 
       - name: 生成 armv7 专属标签
@@ -132,7 +130,7 @@ jobs:
         uses: docker/metadata-action@v5.9.0
         with:
           images: bh9fxk/openwebrx-base
-          render: |
+          tags: |
             # armv7 专属标签：dev-latest-armv7 和时间戳-armv7
             type=raw,value=dev-latest-armv7
             type=raw,value=dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}-armv7
