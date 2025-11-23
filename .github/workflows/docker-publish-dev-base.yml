@@ -20,7 +20,7 @@ on:
         type: boolean
 # 关键：所有 job 共享同一个时间戳！
 env:
-  TIMESTAMP_TAG: dev-${{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}   # 每次 workflow 运行唯一
+  TIMESTAMP_TAG: dev-{{date 'YYYYMMDD-HHmmss' tz='Asia/Shanghai'}}   # 每次 workflow 运行唯一
   LATEST_TAG: dev-latest
   
 jobs:
