@@ -120,7 +120,7 @@ jobs:
           cache-from: type=registry,ref=bh9fxk/openwebrx-base:cache-armv7
           cache-to: type=registry,ref=bh9fxk/openwebrx-base:cache-armv7,mode=max
 
-  # ====================== 阶段4：合并成最终 multi-arch 镜像（彻底修复版）======================
+  # ====================== 阶段4：合并 multi-arch（真正稳的写法）======================
   manifest:
     needs: [amd64, arm64, armv7]
     if: always() && (needs.armv7.result == 'success' || needs.armv7.result == 'skipped')
@@ -133,46 +133,44 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 创建 multi-arch manifest（100% 稳）
+      - name: 安装 docker manifest 命令
         run: |
-          # 原始 tags 是完整镜像名列表，用逗号分隔
-          RAW_TAGS="${{ needs.amd64.outputs.tags }}"
-          echo "原始 tags: $RAW_TAGS"
+          docker run --rm mplatform/manifest-tool --version || true
 
-          # 把逗号换成换行，方便遍历
-          echo "$RAW_TAGS" | tr ',' '\n' > /tmp/tags.txt
+      - name: 创建并推送 multi-arch manifest（绝对成功版）
+        run: |
+          # 拿到所有标签（已经是完整镜像名）
+          TAGS="${{ needs.amd64.outputs.tags }}"
 
-          while IFS= read -r FULL_TAG; do
-            echo "=== 处理镜像: $FULL_TAG ==="
+          echo "$TAGS" | tr ',' '\n' | while IFS= read -r TAG; do
+            echo "处理 $TAG"
 
-            # 构造来源镜像列表（只用实际构建成功的平台）
-            SOURCES=""
+            # 构造要合并的单架构镜像列表
+            MANIFEST_LIST=""
 
             if [[ "${{ needs.amd64.result }}" == "success" ]]; then
-              SOURCES="$SOURCES $FULL_TAG-amd64"
+              MANIFEST_LIST="$MANIFEST_LIST $TAG-amd64"
             fi
-
             if [[ "${{ needs.arm64.result }}" == "success" ]]; then
-              SOURCES="$SOURCES $FULL_TAG-arm64"
+              MANIFEST_LIST="$MANIFEST_LIST $TAG-arm64"
             fi
-
             if [[ "${{ needs.armv7.result }}" == "success" ]]; then
-              SOURCES="$SOURCES $FULL_TAG-armv7"
+              MANIFEST_LIST="$MANIFEST_LIST $TAG-armv7"
             fi
 
-            echo "来源镜像: $SOURCES"
-
-            # 只要有一个平台成功就执行合并
-            if [ -n "$SOURCES" ]; then
-              docker buildx imagetools create "$FULL_TAG" $SOURCES || echo "此标签合并失败，跳过"
+            if [ -n "$MANIFEST_LIST" ]; then
+              echo "创建 manifest: $TAG ← $MANIFEST_LIST"
+              docker manifest create "$TAG" $MANIFEST_LIST
+              docker manifest push "$TAG"
             fi
-          done < /tmp/tags.txt
+          done
 
-          # 最后强制把 dev-latest 指向最新的时间戳标签（最重要！）
-          LATEST_TIMESTAMP_TAG=$(echo "$RAW_TAGS" | tr ',' '\n' | grep -E 'dev-[0-9]{8}-[0-9]{6}$' | head -1)
-          if [ -n "$LATEST_TIMESTAMP_TAG" ]; then
-            echo "=== 强制更新 dev-latest 指向 ===> $LATEST_TIMESTAMP_TAG"
-            docker buildx imagetools create bh9fxk/openwebrx-base:dev-latest "$LATEST_TIMESTAMP_TAG"
+          # 最后强制把 dev-latest 指向最新的时间戳标签
+          LATEST=$(echo "$TAGS" | tr ',' '\n' | grep -E 'dev-[0-9]{8}-[0-9]{6}$' | head -1)
+          if [ -n "$LATEST" ]; then
+            echo "更新 dev-latest → $LATEST"
+            docker manifest create bh9fxk/openwebrx-base:dev-latest "$LATEST"
+            docker manifest push bh9fxk/openwebrx-base:dev-latest
           fi
           
   # ====================== 清理旧 runs ======================
