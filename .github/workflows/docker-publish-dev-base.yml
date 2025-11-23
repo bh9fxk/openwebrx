@@ -171,7 +171,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 使用 buildx imagetools
+      - name: 合并 multi-arch（支持只勾一个平台）
         run: |
           SOURCES=""
           [[ "${{ needs.amd64.result }}" == "success" ]] && SOURCES="$SOURCES bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}-amd64"
@@ -180,16 +180,25 @@ jobs:
 
           echo "本次参与合并的镜像: $SOURCES"
 
-          # 直接用 imagetools create 强制覆盖
-          docker buildx imagetools create -t bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }} $SOURCES
+          # 关键修复：如果有至少一个平台成功，就执行合并
+          if [ -n "$SOURCES" ]; then
+            # 合并成时间戳标签
+            docker buildx imagetools create \
+              -t bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }} \
+              $SOURCES
 
-          # 再把 dev-latest 也强制指向这次构建
-          docker buildx imagetools create -t bh9fxk/openwebrx-base:${{ env.LATEST_TAG }} \
-            bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}
+            # 更新 dev-latest
+            docker buildx imagetools create \
+              -t bh9fxk/openwebrx-base:${{ env.LATEST_TAG }} \
+              bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}
 
-          echo "multi-arch 镜像发布成功！"
-          echo "时间戳标签 → bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}"
-          echo "最新标签   → bh9fxk/openwebrx-base:${{ env.LATEST_TAG }}"
+            echo "multi-arch 镜像发布成功！"
+            echo "时间戳标签 → bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}"
+            echo "最新标签   → bh9fxk/openwebrx-base:${{ env.LATEST_TAG }}"
+          else
+            echo "没有任何平台构建成功，跳过 manifest 合并"
+            exit 0
+          fi
           
   # ====================== 清理旧 workflow ======================
   cleanup:
