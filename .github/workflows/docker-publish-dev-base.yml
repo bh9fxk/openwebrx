@@ -74,7 +74,7 @@ jobs:
 
   # ====================== arm64 ======================
   arm64:
-    needs: [init, amd64]
+    needs: [init]
     if: ${{ github.event.inputs.build_arm64 == 'true' || github.event_name != 'workflow_dispatch' }}
     name: Build arm64
     runs-on: ubuntu-latest
@@ -116,7 +116,7 @@ jobs:
 
   # ====================== arm/v7 ======================
   armv7:
-    needs: [init, amd64]
+    needs: [init]
     if: ${{ github.event.inputs.build_armv7 == 'true' }}
     name: Build arm/v7（慢）
     runs-on: ubuntu-latest
