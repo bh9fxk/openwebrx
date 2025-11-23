@@ -121,22 +121,40 @@ jobs:
     name: Create multi-arch manifest
     runs-on: ubuntu-latest
     steps:
-      - uses: docker/login-action@v3.6.0
+      - name: 登录 Docker Hub
+        uses: docker/login-action@v3.6.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Create and push manifest
-        run: |
-          TAGS="${{ needs.amd64.outputs.tags }}"
-          for TAG in $(echo $TAGS | tr "," "\n"); do
-            echo "=== Creating manifest for $TAG ==="
-            docker buildx imagetools create -t "bh9fxk/openwebrx-base:$TAG" \
-              "bh9fxk/openwebrx-base:$TAG"
-          done
 
-          # 特别更新 dev-latest（最重要！）
-          docker buildx imagetools create bh9fxk/openwebrx-base:dev-latest \
-            bh9fxk/openwebrx-base:$(echo $TAGS | cut -d',' -f1 | cut -d'=' -f2)
+      - name: 合并所有平台为 multi-arch
+        run: |
+          # 从 amd64 job 拿到所有标签（dev-latest 和带时间戳的两个）
+          TAGS="${{ needs.amd64.outputs.tags }}"
+          
+          # 遍历每个标签，分别创建 multi-arch manifest
+          for TAG in $(echo "$TAGS" | tr ',' '\n'); do
+            echo "=== Creating multi-arch manifest for bh9fxk/openwebrx-base:$TAG ==="
+            
+            # 构建来源镜像列表（已经推上去的单架构镜像）
+            SOURCES=""
+            [ "${{ needs.amd64.result }}" = "success" ] && SOURCES="$SOURCES bh9fxk/openwebrx-base:$TAG"
+            [ "${{ needs.arm64.result }}" = "success" ] && SOURCES="$SOURCES bh9fxk/openwebrx-base:$TAG"
+            [ "${{ needs.armv7.result }}" = "success" ] && SOURCES="$SOURCES bh9fxk/openwebrx-base:$TAG"
+            
+            # 只有至少有一个平台成功才执行合并
+            if [ -n "$SOURCES" ]; then
+              docker buildx imagetools create -t "bh9fxk/openwebrx-base:$TAG" $SOURCES
+            fi
+          done
+          
+          # 特别处理 dev-latest（最重要！一定要指向最新的时间戳标签）
+          LATEST_TAG=$(echo "$TAGS" | tr ',' '\n' | grep '^dev-' | head -1)
+          if [ -n "$LATEST_TAG" ]; then
+            echo "=== 更新 dev-latest 指向最新时间戳标签 ==="
+            docker buildx imagetools create bh9fxk/openwebrx-base:dev-latest \
+              bh9fxk/openwebrx-base:$LATEST_TAG
+          fi
 
   # ====================== 清理旧 runs ======================
   cleanup:
