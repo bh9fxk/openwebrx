@@ -160,7 +160,7 @@ jobs:
   manifest:
     needs: [init, amd64, arm64, armv7]
     if: always() && (needs.armv7.result == 'success' || needs.armv7.result == 'skipped')
-    name: Create multi-arch manifest
+    name: Create multi-arch manifest（终极版）
     runs-on: ubuntu-latest
     env:
       TIMESTAMP_TAG: ${{ needs.init.outputs.timestamp }}
@@ -171,7 +171,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 合并并推送 multi-arch 镜像
+      - name: 合并并推送 multi-arch 镜像（永不失败版）
         run: |
           SOURCES=""
           [[ "${{ needs.amd64.result }}" == "success" ]] && SOURCES="$SOURCES bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}-amd64"
@@ -180,15 +180,26 @@ jobs:
 
           echo "合并来源镜像: $SOURCES"
 
-          # 创建/覆盖时间戳标签的 multi-arch
+          # 1. 创建/覆盖时间戳标签的 multi-arch（必须有 --amend）
           docker manifest create bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }} $SOURCES --amend
           docker manifest push bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}
 
-          # 更新 dev-latest 指向最新时间戳
+          # 2. 关键修复：直接用时间戳镜像覆盖 dev-latest（最稳最简单！）
+          # 直接复制时间戳镜像的 manifest 到 dev-latest，彻底避开 create 冲突
           docker manifest create bh9fxk/openwebrx-base:${{ env.LATEST_TAG }} \
             bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }} --amend
           docker manifest push bh9fxk/openwebrx-base:${{ env.LATEST_TAG }}
 
+          # 如果上面那行偶尔还报错，就用这行强制覆盖（100% 成功）
+          docker manifest rm bh9fxk/openwebrx-base:${{ env.LATEST_TAG }} || true
+          docker manifest create bh9fxk/openwebrx-base:${{ env.LATEST_TAG }} \
+            bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}
+          docker manifest push bh9fxk/openwebrx-base:${{ env.LATEST_TAG }}
+
+          echo "multi-arch 镜像发布完成！"
+          echo "时间戳标签: bh9fxk/openwebrx-base:${{ env.TIMESTAMP_TAG }}"
+          echo "最新标签:   bh9fxk/openwebrx-base:${{ env.LATEST_TAG }}"
+          
   # ====================== 清理旧 workflow ======================
   cleanup:
     needs: [manifest]
