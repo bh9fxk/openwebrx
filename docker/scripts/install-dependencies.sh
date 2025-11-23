@@ -61,8 +61,8 @@ WSJT_DIR=wsjtx-2.7.0
 WSJT_TGZ=${WSJT_DIR}.tgz
 wget https://downloads.sourceforge.net/project/wsjt/${WSJT_DIR}/${WSJT_TGZ}
 tar xfz ${WSJT_TGZ}
-# patch -Np0 -d ${WSJT_DIR} < /wsjtx-hamlib.patch
-# mv /wsjtx.patch ${WSJT_DIR}
+patch -Np0 -d ${WSJT_DIR} < /wsjtx-hamlib.patch
+mv /wsjtx.patch ${WSJT_DIR}
 cmakebuild ${WSJT_DIR}
 rm ${WSJT_TGZ}
 
@@ -76,7 +76,7 @@ git clone --depth 1 -b 1.8.1 https://github.com/wb2osz/direwolf.git
 cd direwolf
 # hamlib is present (necessary for the wsjt-x and js8call builds) and would be used, but there's no real need.
 # this patch prevents direwolf from linking to it, and it can be stripped at the end of the script.
-# patch -Np1 < /direwolf-hamlib.patch
+patch -Np1 < /direwolf-hamlib.patch
 mkdir build
 cd build
 cmake ..
