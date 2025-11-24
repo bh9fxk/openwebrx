@@ -57,20 +57,18 @@ rm /js8call-hamlib.patch
 cmakebuild ${JS8CALL_DIR}
 rm ${JS8CALL_TGZ}
 
-WSJT_DIR=wsjtx-2.7.0
+WSJT_DIR=wsjtx-2.6.1
 WSJT_TGZ=${WSJT_DIR}.tgz
 wget https://downloads.sourceforge.net/project/wsjt/${WSJT_DIR}/${WSJT_TGZ}
 tar xfz ${WSJT_TGZ}
-# patch -Np0 -d ${WSJT_DIR} < /wsjtx-hamlib.patch
-# mv /wsjtx.patch ${WSJT_DIR}
+patch -Np0 -d ${WSJT_DIR} < /wsjtx-hamlib.patch
+mv /wsjtx.patch ${WSJT_DIR}
 cmakebuild ${WSJT_DIR}
 rm ${WSJT_TGZ}
 
 git clone https://github.com/alexander-sholohov/msk144decoder.git
 # latest from main as of 2023-02-21
-# MAKEFLAGS="" cmakebuild msk144decoder fe2991681e455636e258e83c29fd4b2a72d16095
-# latest from main as of 2024-06-07
- MAKEFLAGS="" cmakebuild msk144decoder 761d0b3a61cde664d4c25b1c6ff1d9c0e395af23
+MAKEFLAGS="" cmakebuild msk144decoder fe2991681e455636e258e83c29fd4b2a72d16095
 
 git clone --depth 1 -b 1.8.1 https://github.com/wb2osz/direwolf.git
 cd direwolf
@@ -115,7 +113,7 @@ rm dream-2.1.1-svn808.tar.gz
 git clone https://github.com/mobilinkd/m17-cxx-demod.git
 cmakebuild m17-cxx-demod v2.3
 
-git clone --depth 1 -b v10.2 https://github.com/flightaware/dump1090
+git clone --depth 1 -b v9.0 https://github.com/flightaware/dump1090
 cd dump1090
 make
 install -m 0755 dump1090 /usr/local/bin
@@ -124,9 +122,7 @@ rm -rf dump1090
 
 git clone https://github.com/merbanan/rtl_433.git
 # latest from master as of 2023-09-06
-# CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 70d84d01e1be87b459f7a10825966f3262b7dd34
-# latest from master as of 2025-11-16
-CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 87e7ccb61cc7c1aaf7450b1f7a08f09ab7b3faf2
+CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 70d84d01e1be87b459f7a10825966f3262b7dd34
 
 git clone https://github.com/szpajder/libacars.git
 cmakebuild libacars v2.2.0
