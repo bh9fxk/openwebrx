@@ -168,7 +168,6 @@ jobs:
   # ====================== 清理旧 workflow ======================
   cleanup:
     needs: manifest
-    if: always()
     name: 清理旧 workflow runs
     runs-on: ubuntu-latest
     steps:
