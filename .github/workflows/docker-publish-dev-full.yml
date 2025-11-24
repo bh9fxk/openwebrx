@@ -102,7 +102,11 @@ jobs:
       LATEST_TAG: dev-latest
     steps:
       - uses: actions/checkout@v5.0.1
+      
       - uses: docker/setup-qemu-action@v3.7.0
+        with:
+          platforms: arm
+          
       - name: 生成 armv7 标签
         id: meta
         uses: docker/metadata-action@v5.9.0
