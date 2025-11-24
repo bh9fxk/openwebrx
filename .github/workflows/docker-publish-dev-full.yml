@@ -96,7 +96,7 @@ jobs:
   armv7:
     needs: init
     name: Build arm/v7
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     env:
       TIMESTAMP_TAG: ${{ needs.init.outputs.timestamp }}
       LATEST_TAG: dev-latest
