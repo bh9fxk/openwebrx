@@ -145,11 +145,11 @@ popd
 rm -rf redsea
 
 git clone https://github.com/Opendigitalradio/dablin.git
-CMAKE_ARGS="-DDISABLE_SDL=1" cmakebuild dablin 1.15.0
+CMAKE_ARGS="-DDISABLE_SDL=1" cmakebuild dablin 1.16.1
 
 git clone https://github.com/hessu/aprs-symbols /usr/share/aprs-symbols
 pushd /usr/share/aprs-symbols
-git checkout 5c2abe2658ee4d2563f3c73b90c6f59124839802
+git checkout f2286a9cd43eb6ba4501250b4c39fff111e3796c
 # remove unused files (including git meta information)
 rm -rf .git aprs-symbols.ai aprs-sym-export.js
 popd
