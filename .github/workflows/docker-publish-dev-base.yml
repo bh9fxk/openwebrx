@@ -105,7 +105,7 @@ jobs:
       
       - uses: docker/setup-qemu-action@v3.7.0
         with:
-          platforms: armv7
+          platforms: arm
       - name: 生成 armv7 标签
         id: meta
         uses: docker/metadata-action@v5.9.0
