@@ -61,7 +61,7 @@ WSJT_DIR=wsjtx-2.7.0
 WSJT_TGZ=${WSJT_DIR}.tgz
 wget https://downloads.sourceforge.net/project/wsjt/${WSJT_DIR}/${WSJT_TGZ}
 tar xfz ${WSJT_TGZ}
-patch -Np0 -d ${WSJT_DIR} < /wsjtx-hamlib.patch
+# patch -Np0 -d ${WSJT_DIR} < /wsjtx-hamlib.patch
 # mv /wsjtx.patch ${WSJT_DIR}
 cmakebuild ${WSJT_DIR}
 rm ${WSJT_TGZ}
@@ -115,7 +115,7 @@ rm dream-2.1.1-svn808.tar.gz
 git clone https://github.com/mobilinkd/m17-cxx-demod.git
 cmakebuild m17-cxx-demod v2.3
 
-git clone --depth 1 -b v9.0 https://github.com/flightaware/dump1090
+git clone --depth 1 -b v10.2 https://github.com/flightaware/dump1090
 cd dump1090
 make
 install -m 0755 dump1090 /usr/local/bin
