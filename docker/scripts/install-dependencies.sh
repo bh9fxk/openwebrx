@@ -61,8 +61,8 @@ WSJT_DIR=wsjtx-2.7.0
 WSJT_TGZ=${WSJT_DIR}.tgz
 wget https://downloads.sourceforge.net/project/wsjt/${WSJT_DIR}/${WSJT_TGZ}
 tar xfz ${WSJT_TGZ}
-# patch -Np0 -d ${WSJT_DIR} < /wsjtx-hamlib.patch
-mv /wsjtx.patch ${WSJT_DIR}
+patch -Np0 -d ${WSJT_DIR} < /wsjtx-hamlib.patch
+# mv /wsjtx.patch ${WSJT_DIR}
 cmakebuild ${WSJT_DIR}
 rm ${WSJT_TGZ}
 
