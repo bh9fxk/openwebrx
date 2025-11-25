@@ -28,7 +28,7 @@ jobs:
       TIMESTAMP_TAG: ${{ needs.init.outputs.timestamp }}
       LATEST_TAG: dev-latest
     steps:
-      - uses: actions/checkout@v5.0.1
+      - uses: actions/checkout@v6
       - name: 生成 amd64 标签
         id: meta
         uses: docker/metadata-action@v5.9.0
@@ -64,7 +64,7 @@ jobs:
       TIMESTAMP_TAG: ${{ needs.init.outputs.timestamp }}
       LATEST_TAG: dev-latest
     steps:
-      - uses: actions/checkout@v5.0.1
+      - uses: actions/checkout@v6
       - uses: docker/setup-qemu-action@v3.7.0
       - name: 生成 arm64 标签
         id: meta
@@ -101,7 +101,7 @@ jobs:
       TIMESTAMP_TAG: ${{ needs.init.outputs.timestamp }}
       LATEST_TAG: dev-latest
     steps:
-      - uses: actions/checkout@v5.0.1
+      - uses: actions/checkout@v6
       
       - uses: docker/setup-qemu-action@v3.7.0
         # with:
