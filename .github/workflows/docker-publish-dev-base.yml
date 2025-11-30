@@ -19,7 +19,7 @@ jobs:
         run: |
           echo "timestamp=dev-$(date -u -d '+8 hours' '+%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
 
-  # ====================== amd64（最快） ======================
+  # ====================== amd64 ======================
   amd64:
     needs: init
     name: Build amd64
