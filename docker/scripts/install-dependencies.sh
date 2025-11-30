@@ -136,8 +136,7 @@ cmakebuild dumpvdl2 v2.3.0
 git clone https://github.com/windytan/redsea.git
 pushd redsea
 # latest from master as of 2024-01-18
-#git checkout c6e6b47ac2c7a9aac9409483b00ca61cd6eb47bd
-git checkout 2cf26a7d36cc77f5cc7fd4fd409c6d5d60fda0ff # 2025.11.30
+git checkout c6e6b47ac2c7a9aac9409483b00ca61cd6eb47bd
 ./autogen.sh
 ./configure
 make
