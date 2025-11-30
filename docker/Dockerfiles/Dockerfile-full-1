@@ -34,20 +34,6 @@ RUN chmod +x /integrate-softmbe-dev.sh && \
     /integrate-softmbe-dev.sh && \
     rm /integrate-softmbe-dev.sh
 
-# 精简镜像
-RUN rm -rf /usr/share/doc/* /usr/share/man/* /var/cache/*
-RUN rm -rf \
-    /etc/cron.* \
-    /etc/logrotate.d \
-    /var/log/* \
-    /var/lib/apt/lists/* \
-    /usr/share/locale/* \
-    /usr/share/i18n/* \
-    /usr/share/zoneinfo/* || true \
-    && find /usr/share/doc -depth -type f ! -name copyright -exec rm {} + \
-    && find /usr/share/man -type f -exec rm -f {} + \
-    && rm -rf /root/.cache
-
 COPY docker/files/services/sdrplay /etc/services.d/sdrplay
 
 ADD . /opt/openwebrx
