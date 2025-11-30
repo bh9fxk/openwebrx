@@ -14,9 +14,6 @@ COPY docker/scripts/install-owrx-tools.sh /
 RUN /install-owrx-tools.sh && \
     rm /install-owrx-tools.sh
 
-# 精简镜像
-RUN rm -rf /usr/share/doc/* /usr/share/man/* /var/cache/*
-
 COPY docker/files/services/codecserver /etc/services.d/codecserver
 
 ENTRYPOINT ["/init"]
