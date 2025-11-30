@@ -7,7 +7,7 @@ apt-get -qq -y install wget gpg git debhelper cmake
 
 apt-get -qq update
 echo "------安装依赖------"
-apt-get -qq -y install $BUILD_PACKAGES
+apt-get -qq -y install --no-install-recommends $BUILD_PACKAGES
 
 cd
 # install mbelib
