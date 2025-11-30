@@ -26,7 +26,9 @@ apt-get -y install --no-install-recommends $STATIC_PACKAGES $BUILD_PACKAGES
 
 git clone https://github.com/jketterl/owrx_connector.git
 # latest develop as of 2024-01-01 (fixed startup race condition)
-cmakebuild owrx_connector 62219d40e180abb539ad61fcd9625b90c34f0e26
+# cmakebuild owrx_connector 62219d40e180abb539ad61fcd9625b90c34f0e26
+# latest develop as of 2024-05-03
+cmakebuild owrx_connector 03d5b970ed791f48a65add2c5ebfd68206c70366
 
 apt-get -y purge --autoremove $BUILD_PACKAGES
 apt-get clean
