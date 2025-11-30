@@ -136,7 +136,8 @@ cmakebuild dumpvdl2 v2.3.0
 git clone https://github.com/windytan/redsea.git
 pushd redsea
 # latest from master as of 2024-01-18
-git checkout c6e6b47ac2c7a9aac9409483b00ca61cd6eb47bd
+#git checkout c6e6b47ac2c7a9aac9409483b00ca61cd6eb47bd
+git checkout 1.2.0
 ./autogen.sh
 ./configure
 make
@@ -145,7 +146,7 @@ popd
 rm -rf redsea
 
 git clone https://github.com/Opendigitalradio/dablin.git
-CMAKE_ARGS="-DDISABLE_SDL=1" cmakebuild dablin 1.16.1
+CMAKE_ARGS="-DDISABLE_SDL=1" cmakebuild dablin 1.16.1 # 2025.11.30
 
 git clone https://github.com/hessu/aprs-symbols /usr/share/aprs-symbols
 pushd /usr/share/aprs-symbols
@@ -154,6 +155,8 @@ git checkout f2286a9cd43eb6ba4501250b4c39fff111e3796c
 rm -rf .git aprs-symbols.ai aprs-sym-export.js
 popd
 
-apt-get -y purge --autoremove $BUILD_PACKAGES
-apt-get clean
+apt-get -qq update # 2025.11.30
+apt-get -y purge --autoremove --allow-remove-essential $BUILD_PACKAGES # --allow-remove-essential
+apt-get -y autoremove # 2025.11.30
+apt-get -y autoclean
 rm -rf /var/lib/apt/lists/*
