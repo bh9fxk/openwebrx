@@ -47,9 +47,13 @@ esac
 wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.5.0/s6-overlay-noarch.tar.xz
 tar -Jxpf /tmp/s6-overlay-noarch.tar.xz -C /
 rm s6-overlay-noarch.tar.xz
+# 2025.12.1
+rm /tmp/s6-overlay-noarch.tar.xz
 wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.5.0/s6-overlay-${PLATFORM}.tar.xz
 tar -Jxpf /tmp/s6-overlay-${PLATFORM}.tar.xz -C /
 rm s6-overlay-${PLATFORM}.tar.xz
+# 2025.12.1
+rm /tmp/s6-overlay-${PLATFORM}.tar.xz
 
 JS8CALL_VERSION=2.2.0
 JS8CALL_DIR=js8call
@@ -75,6 +79,8 @@ git clone https://github.com/alexander-sholohov/msk144decoder.git
 # latest from main as of 2023-02-21
 MAKEFLAGS="" cmakebuild msk144decoder fe2991681e455636e258e83c29fd4b2a72d16095
 
+# 2025.12.1
+cd /tmp
 git clone --depth 1 -b 1.8.1 https://github.com/wb2osz/direwolf.git
 cd direwolf
 # hamlib is present (necessary for the wsjt-x and js8call builds) and would be used, but there's no real need.
@@ -87,11 +93,15 @@ make
 make install
 cd ../..
 rm -rf direwolf
+# 2025.12.1
+rm -rf /tmp/direwolf
 # strip lots of generic documentation that will never be read inside a docker container
 rm /usr/local/share/doc/direwolf/*.pdf
 # examples are pointless, too
 rm -rf /usr/local/share/doc/direwolf/examples/
 
+# 2025.12.1
+cd /tmp
 git clone https://github.com/drowe67/codec2.git
 cd codec2
 git checkout 1.2.0
@@ -103,7 +113,10 @@ make install
 install -m 0755 src/freedv_rx /usr/local/bin
 cd ../..
 rm -rf codec2
+# 2025.12.1
+rm -rf /tmp/codec2
 
+# 2025.12.1
 wget https://downloads.sourceforge.net/project/drm/dream/2.1.1/dream-2.1.1-svn808.tar.gz
 tar xvfz dream-2.1.1-svn808.tar.gz
 pushd dream
@@ -114,16 +127,25 @@ make install
 popd
 rm -rf dream
 rm dream-2.1.1-svn808.tar.gz
+# 2025.12.1
+rm -rf /tmp/dream
+rm /tmp/dream-2.1.1-svn808.tar.gz
 
+# 2025.12.1
+cd /tmp
 git clone https://github.com/mobilinkd/m17-cxx-demod.git
 cmakebuild m17-cxx-demod v2.3
 
+# 2025.12.1
+cd /tmp
 git clone --depth 1 -b v10.2 https://github.com/flightaware/dump1090
 cd dump1090
 make
 install -m 0755 dump1090 /usr/local/bin
 cd ..
 rm -rf dump1090
+# 2025.12.1
+rm -rf /tmp/dump1090
 
 git clone https://github.com/merbanan/rtl_433.git
 # latest from master as of 2023-09-06
@@ -138,6 +160,7 @@ cmakebuild dumphfdl v1.4.1
 git clone https://github.com/szpajder/dumpvdl2.git
 cmakebuild dumpvdl2 v2.3.0
 
+cd /tmp
 git clone https://github.com/windytan/redsea.git
 pushd redsea
 # latest from master as of 2024-01-18
@@ -148,6 +171,7 @@ make
 make install
 popd
 rm -rf redsea
+rm -rf /tmp/redsea
 
 git clone https://github.com/Opendigitalradio/dablin.git
 CMAKE_ARGS="-DDISABLE_SDL=1" cmakebuild dablin 1.16.1 # 2025.11.30
