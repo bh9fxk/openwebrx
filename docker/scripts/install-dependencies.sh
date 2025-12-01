@@ -47,13 +47,10 @@ esac
 wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.5.0/s6-overlay-noarch.tar.xz
 tar -Jxpf /tmp/s6-overlay-noarch.tar.xz -C /
 rm s6-overlay-noarch.tar.xz
-# 2025.12.1
-rm /tmp/s6-overlay-noarch.tar.xz
+
 wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.5.0/s6-overlay-${PLATFORM}.tar.xz
 tar -Jxpf /tmp/s6-overlay-${PLATFORM}.tar.xz -C /
 rm s6-overlay-${PLATFORM}.tar.xz
-# 2025.12.1
-rm /tmp/s6-overlay-${PLATFORM}.tar.xz
 
 JS8CALL_VERSION=2.2.0
 JS8CALL_DIR=js8call
@@ -93,8 +90,6 @@ make
 make install
 cd ../..
 rm -rf direwolf
-# 2025.12.1
-rm -rf /tmp/direwolf
 # strip lots of generic documentation that will never be read inside a docker container
 rm /usr/local/share/doc/direwolf/*.pdf
 # examples are pointless, too
@@ -113,10 +108,7 @@ make install
 install -m 0755 src/freedv_rx /usr/local/bin
 cd ../..
 rm -rf codec2
-# 2025.12.1
-rm -rf /tmp/codec2
 
-# 2025.12.1
 wget https://downloads.sourceforge.net/project/drm/dream/2.1.1/dream-2.1.1-svn808.tar.gz
 tar xvfz dream-2.1.1-svn808.tar.gz
 pushd dream
@@ -127,9 +119,6 @@ make install
 popd
 rm -rf dream
 rm dream-2.1.1-svn808.tar.gz
-# 2025.12.1
-rm -rf /tmp/dream
-rm /tmp/dream-2.1.1-svn808.tar.gz
 
 # 2025.12.1
 cd /tmp
@@ -144,8 +133,6 @@ make
 install -m 0755 dump1090 /usr/local/bin
 cd ..
 rm -rf dump1090
-# 2025.12.1
-rm -rf /tmp/dump1090
 
 git clone https://github.com/merbanan/rtl_433.git
 # latest from master as of 2023-09-06
@@ -171,7 +158,6 @@ make
 make install
 popd
 rm -rf redsea
-rm -rf /tmp/redsea
 
 git clone https://github.com/Opendigitalradio/dablin.git
 CMAKE_ARGS="-DDISABLE_SDL=1" cmakebuild dablin 1.16.1 # 2025.11.30
@@ -188,3 +174,4 @@ apt-get -y purge --autoremove --allow-remove-essential $BUILD_PACKAGES # --allow
 apt-get -y autoremove # 2025.11.30
 apt-get -y autoclean
 rm -rf /var/lib/apt/lists/*
+rm -rf /tmp/*
