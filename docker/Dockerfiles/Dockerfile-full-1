@@ -28,7 +28,7 @@ RUN /install-dependencies-rtlsdr.sh &&\
     rm /install-lib.*.patch && \
     rm /install-connectors.sh
 
-# insatall softmbe
+# install softmbe
 COPY docker/scripts/integrate-softmbe-dev.sh /
 RUN chmod +x /integrate-softmbe-dev.sh &&\
     /integrate-softmbe-dev.sh &&\
