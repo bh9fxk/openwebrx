@@ -30,8 +30,8 @@ RUN /install-dependencies-rtlsdr.sh &&\
 
 # insatall softmbe
 COPY docker/scripts/integrate-softmbe-dev.sh /
-RUN chmod +x /integrate-softmbe-dev.sh && \
-    /integrate-softmbe-dev.sh && \
+RUN chmod +x /integrate-softmbe-dev.sh &&\
+    /integrate-softmbe-dev.sh &&\
     rm /integrate-softmbe-dev.sh
 
 COPY docker/files/services/sdrplay /etc/services.d/sdrplay
