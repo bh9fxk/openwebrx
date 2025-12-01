@@ -52,3 +52,4 @@ apt-get -y autoremove
 apt-get autoclean
 
 rm -rf /var/lib/apt/lists/*
+rm -rf /tmp/*
