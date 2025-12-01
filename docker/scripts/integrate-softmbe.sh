@@ -7,7 +7,7 @@ apt-get -qq update
 apt-get -qq -y install --no-install-recommends wget gpg git debhelper cmake
 apt-get -qq -y install --no-install-recommends $BUILD_PACKAGES
 
-cd
+cd /tmp
 # install mbelib
 echo "------install mbelib------"
 git clone https://github.com/szechyjs/mbelib.git
