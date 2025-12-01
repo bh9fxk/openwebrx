@@ -2,11 +2,9 @@
 #
 BUILD_PACKAGES="libprotobuf-dev protobuf-compiler libcodecserver-dev"
 
-apt-get -qq update
-apt-get -qq -y install wget gpg git debhelper cmake
-
-apt-get -qq update
 echo "------安装依赖------"
+apt-get -qq update
+apt-get -qq -y install --no-install-recommends wget gpg git debhelper cmake
 apt-get -qq -y install --no-install-recommends $BUILD_PACKAGES
 
 cd
@@ -54,16 +52,3 @@ apt-get -y autoremove
 apt-get autoclean
 
 rm -rf /var/lib/apt/lists/*
-
-# 精简
-rm -rf /usr/share/doc/* /usr/share/man/* /var/cache/*
-rm -rf \
-    /etc/cron.* \
-    /etc/logrotate.d \
-    /var/log/* \
-    /usr/share/locale/* \
-    /usr/share/i18n/* \
-    /usr/share/zoneinfo/* || true \
-    && find /usr/share/doc -depth -type f ! -name copyright -exec rm {} + \
-    && find /usr/share/man -type f -exec rm -f {} + \
-    && rm -rf /root/.cache
