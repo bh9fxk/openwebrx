@@ -84,7 +84,8 @@ ADEVICE stdin null
 
 CHANNEL 0
 MYCALL {callsign}
-MODEM 1200 E+     # 修改解码器 2025.11.30
+# 修改解码器 2025.11.30
+MODEM 1200 E+
 
 KISSPORT {port}
 AGWPORT off
