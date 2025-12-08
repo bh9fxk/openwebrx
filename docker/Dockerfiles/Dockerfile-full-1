@@ -1,6 +1,6 @@
 FROM bh9fxk/openwebrx-base:dev-latest
 
-LABEL description="OpenWebRX + Digital codecs (mbelib), using codecserver-softmbe."
+LABEL description="OpenWebRX + Digital codecs (mbelib), using codecserver-softmbe. **Personal Use**"
 
 COPY docker/scripts/install-dependencies-*.sh \
      docker/files/sdrplay/install-lib.*.patch \
