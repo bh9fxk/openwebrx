@@ -158,7 +158,10 @@ class DirewolfModule(ExecModule, DirewolfConfigSubscriber):
         self.direwolfConfig.wire(self)
         self.__writeConfig()
 
-        super().__init__(Format.SHORT, Format.CHAR, ["direwolf", "-c", self.direwolfConfigPath, "-r", "48000", "-t", "0", "-q", "d", "-q", "h"])
+        # super().__init__(Format.SHORT, Format.CHAR, ["direwolf", "-c", self.direwolfConfigPath, "-r", "48000", "-t", "0", "-q", "d", "-q", "h"])
+        # 增加FEC参数，采样率改为24k,静默设置修改
+        super().__init__(Format.SHORT, Format.CHAR, ["direwolf", "-c", self.direwolfConfigPath, "-r", "24000", "-t", "0", "-q", "d", "-X", "1"])
+
         # direwolf supplies the data via a socket which we tap into in start()
         # the output on its STDOUT is informative, but we still want to log it
         buffer = Buffer(Format.CHAR)
