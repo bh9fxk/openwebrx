@@ -1,4 +1,4 @@
-name: 发布 OWRX 开发版基础镜像
+name: 发布 OWRX 开发版基础(base)镜像
 
 # 去掉手动选择，默认全平台构建（需要时直接点 Run workflow 即可）
 on:
