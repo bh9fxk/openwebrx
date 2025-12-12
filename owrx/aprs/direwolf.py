@@ -159,7 +159,7 @@ class DirewolfModule(ExecModule, DirewolfConfigSubscriber):
         self.__writeConfig()
 
         # super().__init__(Format.SHORT, Format.CHAR, ["direwolf", "-c", self.direwolfConfigPath, "-r", "48000", "-t", "0", "-q", "d", "-q", "h"])
-        # 采样率改为24k,静默设置修改
+        # 静默设置修改
         super().__init__(Format.SHORT, Format.CHAR, ["direwolf", "-c", self.direwolfConfigPath, "-r", "48000", "-t", "0", "-q", "d"])
 
         # direwolf supplies the data via a socket which we tap into in start()
