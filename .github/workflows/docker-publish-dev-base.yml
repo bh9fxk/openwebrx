@@ -102,7 +102,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.1
       
-      - uses: docker/setup-qemu-action@v3.7.0
+      - uses: docker/setup-qemu-action@v4
         with:
           platforms: arm
       - name: 生成 armv7 标签

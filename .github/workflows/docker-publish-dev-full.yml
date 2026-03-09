@@ -65,7 +65,7 @@ jobs:
       LATEST_TAG: dev-latest
     steps:
       - uses: actions/checkout@v6.0.1
-      - uses: docker/setup-qemu-action@v3.7.0
+      - uses: docker/setup-qemu-action@v4
       - name: 生成 arm64 标签
         id: meta
         uses: docker/metadata-action@v5.9.0
@@ -103,7 +103,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.1
       
-      - uses: docker/setup-qemu-action@v3.7.0
+      - uses: docker/setup-qemu-action@v4
         with:
           platforms: arm
           
