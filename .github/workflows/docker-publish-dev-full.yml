@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v6.0.1
       - name: 生成 amd64 标签
         id: meta
-        uses: docker/metadata-action@v5.9.0
+        uses: docker/metadata-action@v6
         with:
           images: bh9fxk/openwebrx-softmbe
           tags: |
@@ -43,7 +43,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build & push amd64
-        uses: docker/build-push-action@v6.18.0
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./docker/Dockerfiles/Dockerfile-full-1
@@ -65,10 +65,10 @@ jobs:
       LATEST_TAG: dev-latest
     steps:
       - uses: actions/checkout@v6.0.1
-      - uses: docker/setup-qemu-action@v3.7.0
+      - uses: docker/setup-qemu-action@v4
       - name: 生成 arm64 标签
         id: meta
-        uses: docker/metadata-action@v5.9.0
+        uses: docker/metadata-action@v6
         with:
           images: bh9fxk/openwebrx-softmbe
           tags: |
@@ -80,7 +80,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build & push arm64
-        uses: docker/build-push-action@v6.18.0
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./docker/Dockerfiles/Dockerfile-full-1
@@ -103,13 +103,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.1
       
-      - uses: docker/setup-qemu-action@v3.7.0
+      - uses: docker/setup-qemu-action@v4
         with:
           platforms: arm
           
       - name: 生成 armv7 标签
         id: meta
-        uses: docker/metadata-action@v5.9.0
+        uses: docker/metadata-action@v6
         with:
           images: bh9fxk/openwebrx-softmbe
           tags: |
@@ -121,7 +121,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build & push arm/v7
-        uses: docker/build-push-action@v6.18.0
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./docker/Dockerfiles/Dockerfile-full-1
