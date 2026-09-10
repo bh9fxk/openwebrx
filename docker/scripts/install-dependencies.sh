@@ -53,15 +53,19 @@ tar -Jxpf /tmp/s6-overlay-${PLATFORM}.tar.xz -C /
 rm s6-overlay-${PLATFORM}.tar.xz
 
 JS8CALL_VERSION=2.2.0
+# 2.2.0 corresponds to the "v2.2.0-ga" tag in the upstream git repository
+JS8CALL_TAG=v${JS8CALL_VERSION}-ga
 JS8CALL_DIR=js8call
-JS8CALL_TGZ=js8call-${JS8CALL_VERSION}.tgz
-wget http://files.js8call.com/${JS8CALL_VERSION}/${JS8CALL_TGZ}
-tar xfz ${JS8CALL_TGZ}
+# NOTE: the upstream download host files.js8call.com now serves an expired TLS
+# certificate (2026-09), which makes wget bail out with exit code 5. Pull the
+# release sources from the official git repository instead. A shallow clone is
+# enough: the project has no submodules and its version comes from Versions.cmake,
+# not from `git describe`.
+git clone --depth 1 -b ${JS8CALL_TAG} https://github.com/js8call/js8call.git ${JS8CALL_DIR}
 # patch allows us to build against the packaged hamlib
 patch -Np1 -d ${JS8CALL_DIR} < /js8call-hamlib.patch
 rm /js8call-hamlib.patch
 cmakebuild ${JS8CALL_DIR}
-rm ${JS8CALL_TGZ}
 
 WSJT_DIR=wsjtx-2.6.1
 WSJT_TGZ=${WSJT_DIR}.tgz
