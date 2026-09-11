@@ -1,0 +1,19 @@
+FROM bh9fxk/openwebrx-base:dev-latest
+
+LABEL description="OpenWebRX + RTL-SDR + codecserver-softmbe. **Personal Use**"
+
+COPY docker/scripts/install-dependencies-rtlsdr.sh \
+     docker/scripts/install-connectors.sh /
+
+RUN /install-dependencies-rtlsdr.sh &&\
+    /install-connectors.sh &&\
+    rm /install-dependencies-rtlsdr.sh &&\
+    rm /install-connectors.sh
+
+# install softmbe
+COPY docker/scripts/integrate-softmbe.sh /
+RUN chmod +x /integrate-softmbe.sh &&\
+    /integrate-softmbe.sh &&\
+    rm /integrate-softmbe.sh
+
+COPY . /opt/openwebrx
