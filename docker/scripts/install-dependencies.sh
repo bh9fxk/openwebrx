@@ -28,7 +28,7 @@ BUILD_PACKAGES="wget git libsndfile1-dev libfftw3-dev cmake make gcc g++ liblapa
                 qtmultimedia5-dev qttools5-dev libqt5serialport5-dev qttools5-dev-tools asciidoctor asciidoc libasound2-dev libudev-dev \
                 libhamlib-dev patch xsltproc qt5-qmake libfaad-dev libopus-dev libboost-dev libboost-program-options-dev libboost-log-dev \
                 libboost-regex-dev libpulse-dev libcurl4-openssl-dev libncurses-dev xz-utils libliquid-dev libconfig++-dev autoconf automake \
-                meson ninja-build nlohmann-json3-dev"  # 2026.10.28 meson/ninja/nlohmann-json3-dev: redsea 1.3.0 起改用 meson 构建
+                meson ninja-build nlohmann-json3-dev libglib2.0-dev"  # 2026.10.28 meson/ninja/nlohmann-json3-dev: redsea 1.3.0 起改用 meson 构建; libglib2.0-dev: dumphfdl/dumpvdl2 需要
 apt-get update
 apt-get -y install auto-apt-proxy
 apt-get -y install --no-install-recommends $STATIC_PACKAGES $BUILD_PACKAGES
@@ -45,11 +45,15 @@ case `uname -m` in
         ;;
 esac
 
-wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.5.0/s6-overlay-noarch.tar.xz
+# 2026.10.28: v3.1.5.0 -> v3.2.3.2. Still supports the legacy
+# /etc/services.d layout and S6_CMD_ARG0 used by openwebrx. Note that 3.2.0.0
+# removed the default service startup timeout.
+S6_OVERLAY_VERSION=v3.2.3.2
+wget https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz
 tar -Jxpf /tmp/s6-overlay-noarch.tar.xz -C /
 rm s6-overlay-noarch.tar.xz
 
-wget https://github.com/just-containers/s6-overlay/releases/download/v3.1.5.0/s6-overlay-${PLATFORM}.tar.xz
+wget https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-${PLATFORM}.tar.xz
 tar -Jxpf /tmp/s6-overlay-${PLATFORM}.tar.xz -C /
 rm s6-overlay-${PLATFORM}.tar.xz
 
@@ -146,18 +150,25 @@ cd ..
 rm -rf dump1090
 
 git clone https://github.com/merbanan/rtl_433.git
-# latest from master as of 2023-09-06
-CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 70d84d01e1be87b459f7a10825966f3262b7dd34
+# 25.12 release (2025-12), up from a 2023-09-06 master snapshot  # 2026.10.28
+# ENABLE_RTLSDR=OFF keeps the rtl-sdr dependency out. The options openwebrx uses
+# (-r cf32:-, -F json, -M time:unix, -C si) are unchanged in 25.12.
+CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 25.12
 
 git clone https://github.com/szpajder/libacars.git
 # v2.2.1; libacars is a prerequisite of dumphfdl and dumpvdl2  # 2026.10.28
 cmakebuild libacars v2.2.1
 
 git clone https://github.com/szpajder/dumphfdl
-cmakebuild dumphfdl v1.4.1
+# v1.7.0; needs libacars >= 2.1.0 (built above) and glib2 >= 2.46  # 2026.10.28
+# --iq-file / --sample-format / --sample-rate / --output are unchanged.
+cmakebuild dumphfdl v1.7.0
 
 git clone https://github.com/szpajder/dumpvdl2.git
-cmakebuild dumpvdl2 v2.3.0
+# v2.7.0; needs libacars >= 2.1.0 (built above) and glib2  # 2026.10.28
+# v2.7.0 only adds options (bias, max-ppm), none removed, so the openwebrx
+# command line (--iq-file / --oversample / --sample-format / --output) still works.
+cmakebuild dumpvdl2 v2.7.0
 
 cd /tmp
 git clone https://github.com/windytan/redsea.git
