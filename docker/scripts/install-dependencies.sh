@@ -27,7 +27,8 @@ STATIC_PACKAGES="libfftw3-single3 libfftw3-double3 python3 python3-setuptools py
 BUILD_PACKAGES="wget git libsndfile1-dev libfftw3-dev cmake make gcc g++ liblapack-dev texinfo gfortran libusb-1.0-0-dev qtbase5-dev \
                 qtmultimedia5-dev qttools5-dev libqt5serialport5-dev qttools5-dev-tools asciidoctor asciidoc libasound2-dev libudev-dev \
                 libhamlib-dev patch xsltproc qt5-qmake libfaad-dev libopus-dev libboost-dev libboost-program-options-dev libboost-log-dev \
-                libboost-regex-dev libpulse-dev libcurl4-openssl-dev libncurses-dev xz-utils libliquid-dev libconfig++-dev autoconf automake"
+                libboost-regex-dev libpulse-dev libcurl4-openssl-dev libncurses-dev xz-utils libliquid-dev libconfig++-dev autoconf automake \
+                meson ninja-build nlohmann-json3-dev"  # 2026.10.28 meson/ninja/nlohmann-json3-dev: redsea 1.3.0 起改用 meson 构建
 apt-get update
 apt-get -y install auto-apt-proxy
 apt-get -y install --no-install-recommends $STATIC_PACKAGES $BUILD_PACKAGES
@@ -77,8 +78,10 @@ cmakebuild ${WSJT_DIR}
 rm ${WSJT_TGZ}
 
 git clone https://github.com/alexander-sholohov/msk144decoder.git
-# latest from main as of 2023-02-21
-MAKEFLAGS="" cmakebuild msk144decoder fe2991681e455636e258e83c29fd4b2a72d16095
+# latest from main as of 2024-06-07; upstream ships no release tags  # 2026.10.28
+# this commit fixes parallel builds, but MAKEFLAGS="" is kept so the build stays
+# single-threaded and reproducible on all three architectures.
+MAKEFLAGS="" cmakebuild msk144decoder 761d0b3a61cde664d4c25b1c6ff1d9c0e395af23
 
 # 2025.12.1
 cd /tmp
@@ -129,9 +132,13 @@ cd /tmp
 git clone https://github.com/mobilinkd/m17-cxx-demod.git
 cmakebuild m17-cxx-demod v2.3
 
-# 2025.12.1
+# 2025.12.1 -> v11.1 (2026.10.28)
 cd /tmp
-git clone --depth 1 -b v10.2 https://github.com/flightaware/dump1090
+# v11.1 adds a "starch" submodule, but the generated DSP sources under dsp/generated/
+# are committed to the repo and the Makefile never references starch/, so a plain
+# shallow clone is sufficient (no --recurse-submodules needed).
+# --iformat / --raw / --ifile are all still supported, which openwebrx relies on.
+git clone --depth 1 -b v11.1 https://github.com/flightaware/dump1090
 cd dump1090
 make
 install -m 0755 dump1090 /usr/local/bin
@@ -143,7 +150,8 @@ git clone https://github.com/merbanan/rtl_433.git
 CMAKE_ARGS="-DENABLE_RTLSDR=OFF" cmakebuild rtl_433 70d84d01e1be87b459f7a10825966f3262b7dd34
 
 git clone https://github.com/szpajder/libacars.git
-cmakebuild libacars v2.2.0
+# v2.2.1; libacars is a prerequisite of dumphfdl and dumpvdl2  # 2026.10.28
+cmakebuild libacars v2.2.1
 
 git clone https://github.com/szpajder/dumphfdl
 cmakebuild dumphfdl v1.4.1
@@ -154,12 +162,16 @@ cmakebuild dumpvdl2 v2.3.0
 cd /tmp
 git clone https://github.com/windytan/redsea.git
 pushd redsea
-# latest from master as of 2024-01-18
-git checkout c6e6b47ac2c7a9aac9409483b00ca61cd6eb47bd
-./autogen.sh
-./configure
-make
-make install
+# v1.3.1 (released 2026-07-06)  # 2026.10.28
+# upstream switched the build system from autotools to meson in 1.3.0,
+# so autogen.sh / configure no longer exist. It also needs nlohmann_json >= 3.9.0
+# (bookworm ships 3.11.2, installed in BUILD_PACKAGES above).
+# --samplerate, --rbds and the default "mpx" input are unchanged, so openwebrx
+# keeps working with the same command line.
+git checkout v1.3.1
+meson setup build
+ninja -C build
+ninja -C build install
 popd
 rm -rf redsea
 
