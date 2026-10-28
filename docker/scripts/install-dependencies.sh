@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euxo pipefail
-# -j8 on 4-vCPU runners: oversubscribed 2x on purpose (A/B test on build wall-clock)
-export MAKEFLAGS="-j8"
+# measured 2026-10-28: -j8 on 4-vCPU runners brought no gain (amd64 8.7->9.1 min,
+# arm64 7.5->7.2, arm/v7 78.1->84.2). Keep 1:1 with the core count.
+export MAKEFLAGS="-j4"
 
 function cmakebuild() {
   cd $1
