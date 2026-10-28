@@ -59,6 +59,15 @@ wget https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLA
 tar -Jxpf /tmp/s6-overlay-${PLATFORM}.tar.xz -C /
 rm s6-overlay-${PLATFORM}.tar.xz
 
+# PINNED at 2.2.0 - do not upgrade to 2.3.x (verified 2026-10-29):
+#   1) 2.3.0 removed Fortran and shared memory, which also removed the `js8`
+#      headless decoder target. openwebrx spawns exactly that binary
+#      (owrx/js8.py -> ["js8", "--js8", "-b", <submode>, "-d", <depth>]) and
+#      the js8call-hamlib.patch below keeps only `install (TARGETS js8 ...)`,
+#      so a 2.3.x build would have nothing left to install.
+#   2) 2.3.0 is Qt6-only and "64-bit only": it needs qt6-*-dev plus
+#      Boost >= 1.77 (bookworm ships 1.74) and would drop the armv7 image.
+#   3) 2.3.0 removed the variable decode depth, i.e. the -d flag above.
 JS8CALL_VERSION=2.2.0
 # 2.2.0 corresponds to the "v2.2.0-ga" tag in the upstream git repository
 JS8CALL_TAG=v${JS8CALL_VERSION}-ga
