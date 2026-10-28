@@ -1,6 +1,7 @@
 #!/bin/bash
 set -euxo pipefail
-export MAKEFLAGS="-j4"
+# -j8 on 4-vCPU runners: oversubscribed 2x on purpose (A/B test on build wall-clock)
+export MAKEFLAGS="-j8"
 
 function cmakebuild() {
   cd $1
