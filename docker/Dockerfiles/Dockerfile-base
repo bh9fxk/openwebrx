@@ -2,7 +2,6 @@ FROM debian:bookworm-slim
 
 COPY docker/files/js8call/js8call-hamlib.patch \
      docker/files/wsjtx/wsjtx.patch \
-     docker/files/wsjtx/wsjtx-hamlib.patch \
      docker/files/dream/dream.patch \
      docker/files/direwolf/direwolf-hamlib.patch \
      docker/scripts/install-dependencies.sh /

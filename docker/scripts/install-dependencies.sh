@@ -30,7 +30,7 @@ BUILD_PACKAGES="wget git libsndfile1-dev libfftw3-dev cmake make gcc g++ liblapa
                 qtmultimedia5-dev qttools5-dev libqt5serialport5-dev qttools5-dev-tools asciidoctor asciidoc libasound2-dev libudev-dev \
                 libhamlib-dev patch xsltproc qt5-qmake libfaad-dev libopus-dev libboost-dev libboost-program-options-dev libboost-log-dev \
                 libboost-regex-dev libpulse-dev libcurl4-openssl-dev libncurses-dev xz-utils libliquid-dev libconfig++-dev autoconf automake \
-                meson ninja-build nlohmann-json3-dev libglib2.0-dev"  # 2026.10.28 meson/ninja/nlohmann-json3-dev: redsea 1.3.0 起改用 meson 构建; libglib2.0-dev: dumphfdl/dumpvdl2 需要
+                meson ninja-build nlohmann-json3-dev libglib2.0-dev libqt5websockets5-dev"  # 2026.10.28 meson/ninja/nlohmann-json3-dev: redsea 1.3.0 起改用 meson 构建; libglib2.0-dev: dumphfdl/dumpvdl2 需要
 apt-get update
 apt-get -y install auto-apt-proxy
 apt-get -y install --no-install-recommends $STATIC_PACKAGES $BUILD_PACKAGES
@@ -83,12 +83,25 @@ patch -Np1 -d ${JS8CALL_DIR} < /js8call-hamlib.patch
 rm /js8call-hamlib.patch
 cmakebuild ${JS8CALL_DIR}
 
-WSJT_DIR=wsjtx-2.6.1
-WSJT_TGZ=${WSJT_DIR}.tgz
-wget https://downloads.sourceforge.net/project/wsjt/${WSJT_DIR}/${WSJT_TGZ}
+# 3.0 moved the canonical sources to GitHub. SourceForge still hosts the older
+# releases, but renamed the archive to <name>-src.tar.gz and ships it wrapped in
+# a "superbuild" CMakeLists that builds hamlib via ExternalProject. Taking the
+# GitHub tag archive gives us the real wsjtx source tree instead, so the
+# wsjtx-hamlib.patch (which stripped that bundled hamlib ExternalProject) is no
+# longer needed: the plain build calls find_package (Hamlib) and links the
+# packaged libhamlib-dev.
+#
+# wsjtx.patch has been regenerated against 3.0.2: it keeps the headless targets
+# openwebrx needs (jt9, wsprd, wsjtx_app_version) and drops the Qt5 GUI
+# application, udp_daemon, message_aggregator, qmap/map65, tests, manpages and
+# the debian/desktop packaging. Note that 3.0 adds Qt5 WebSockets to the
+# required components - see libqt5websockets5-dev in BUILD_PACKAGES.
+WSJT_VERSION=3.0.2
+WSJT_DIR=wsjtx-${WSJT_VERSION}
+WSJT_TGZ=${WSJT_DIR}.tar.gz
+wget -O ${WSJT_TGZ} https://github.com/WSJTX/wsjtx/archive/refs/tags/v${WSJT_VERSION}.tar.gz
 tar xfz ${WSJT_TGZ}
-patch -Np0 -d ${WSJT_DIR} < /wsjtx-hamlib.patch
-mv /wsjtx.patch ${WSJT_DIR}
+patch -Np1 -d ${WSJT_DIR} < /wsjtx.patch
 cmakebuild ${WSJT_DIR}
 rm ${WSJT_TGZ}
 

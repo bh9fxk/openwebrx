@@ -1,8 +1,7 @@
-diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
---- wsjtx-orig/CMakeLists.txt	2023-01-28 17:43:05.586124507 +0100
-+++ wsjtx/CMakeLists.txt	2023-01-28 17:56:07.108634912 +0100
-@@ -122,7 +122,7 @@
- option (WSJT_QDEBUG_TO_FILE "Redirect Qt debuging messages to a trace file.")
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -164,7 +164,7 @@
+ option (WSJT_TRACE_CAT_POLLS "Debugging option that turns on CAT diagnostics during polling.")
  option (WSJT_SOFT_KEYING "Apply a ramp to CW keying envelope to reduce transients." ON)
  option (WSJT_SKIP_MANPAGES "Skip *nix manpage generation.")
 -option (WSJT_GENERATE_DOCS "Generate documentation files." ON)
@@ -10,7 +9,7 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
  option (WSJT_RIG_NONE_CAN_SPLIT "Allow split operation with \"None\" as rig.")
  option (WSJT_TRACE_UDP "Debugging option that turns on UDP message protocol diagnostics.")
  option (WSJT_BUILD_UTILS "Build simulators and code demonstrators." ON)
-@@ -170,77 +170,7 @@
+@@ -221,85 +221,7 @@
    )
  
  set (wsjt_qt_CXXSRCS
@@ -44,6 +43,8 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
 -  Transceiver/TransceiverFactory.cpp
 -  Transceiver/PollingTransceiver.cpp
 -  Transceiver/HamlibTransceiver.cpp
+-  Transceiver/TCITransceiver.cpp
+-  Transceiver/HRDMessage.cpp
 -  Transceiver/HRDTransceiver.cpp
 -  Transceiver/DXLabSuiteCommanderTransceiver.cpp
 -  Network/NetworkMessage.cpp
@@ -65,7 +66,12 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
 -  EqualizationToolsDialog.cpp
 -  widgets/DoubleClickablePushButton.cpp
 -  widgets/DoubleClickableRadioButton.cpp
+-  mycustomspinbox.cpp
 -  Network/LotWUsers.cpp
+-  Network/FileDownload.cpp
+-  Network/FoxVerifier.cpp
+-  Network/Cloudlog.cpp
+-  Network/eqsl.cpp
 -  models/DecodeHighlightingModel.cpp
 -  widgets/DecodeHighlightingListView.cpp
 -  models/FoxLog.cpp
@@ -85,24 +91,26 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
 -  widgets/LazyFillComboBox.cpp
 -  widgets/CheckableItemComboBox.cpp
 -  widgets/BandComboBox.cpp
+-  otpgenerator.cpp
    )
  
  set (wsjt_qtmm_CXXSRCS
-@@ -1089,9 +1019,6 @@
+@@ -1301,10 +1223,6 @@
  if (WSJT_GENERATE_DOCS)
    add_subdirectory (doc)
  endif (WSJT_GENERATE_DOCS)
--if (EXISTS ${CMAKE_SOURCE_DIR}/tests AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/tests)
+-if (WSJT_BUILD_TESTS AND EXISTS ${CMAKE_SOURCE_DIR}/tests AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/tests)
+-  enable_testing ()
 -  add_subdirectory (tests)
 -endif ()
  
  # build a library of package functionality (without and optionally with OpenMP support)
  add_library (wsjt_cxx STATIC ${wsjt_CSRCS} ${wsjt_CXXSRCS})
-@@ -1357,10 +1284,7 @@
+@@ -1615,10 +1533,7 @@
  add_library (wsjt_qt STATIC ${wsjt_qt_CXXSRCS} ${wsjt_qt_GENUISRCS} ${GENAXSRCS})
  # set wsjtx_udp exports to static variants
  target_compile_definitions (wsjt_qt PUBLIC UDP_STATIC_DEFINE)
--target_link_libraries (wsjt_qt Hamlib::Hamlib Boost::log qcp Qt5::Widgets Qt5::Network Qt5::Sql)
+-target_link_libraries (wsjt_qt Hamlib::Hamlib Boost::log qcp Qt5::Widgets Qt5::Network Qt5::Sql Qt5::WebSockets)
 -if (WIN32)
 -  target_link_libraries (wsjt_qt Qt5::AxContainer Qt5::AxBase)
 -endif (WIN32)
@@ -110,10 +118,16 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
  
  # build a library of package Qt functionality used in Fortran utilities
  add_library (fort_qt STATIC ${fort_qt_CXXSRCS})
-@@ -1425,90 +1349,6 @@
-   add_subdirectory (map65)
- endif ()
+@@ -1680,113 +1595,6 @@
+   target_link_libraries (jt9 wsjt_fort wsjt_cxx fort_qt)
+ endif (${OPENMP_FOUND} OR APPLE)
  
+-if (NOT WSJT_SKIP_MAP65)
+-  find_package (Portaudio REQUIRED)
+-  add_subdirectory (map65)
+-endif ()
+-add_subdirectory (qmap)
+-
 -# build the main application
 -generate_version_info (wsjtx_VERSION_RESOURCES
 -  NAME wsjtx
@@ -121,12 +135,30 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
 -  ICON ${WSJTX_ICON_FILE}
 -  )
 -
+-# Embed a Windows application manifest declaring per-monitor V2 DPI
+-# awareness. Without it, Windows treats wsjtx.exe as DPI-unaware and
+-# applies legacy bitmap-stretching scaling on high-DPI displays —
+-# fonts/widgets appear larger than locally-built (MSVC) executables
+-# which auto-embed a manifest. Resource ID 1, type RT_MANIFEST (24).
+-set (wsjtx_PLATFORM_RESOURCES)
+-if (WIN32)
+-  set (WSJTX_MANIFEST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/wsjtx.exe.manifest")
+-  configure_file (
+-    "${CMAKE_CURRENT_SOURCE_DIR}/CMake/Modules/wsjtx-manifest.rc.in"
+-    "${CMAKE_CURRENT_BINARY_DIR}/wsjtx-manifest.rc"
+-    @ONLY
+-    )
+-  list (APPEND wsjtx_PLATFORM_RESOURCES
+-    "${CMAKE_CURRENT_BINARY_DIR}/wsjtx-manifest.rc")
+-endif (WIN32)
+-
 -add_executable (wsjtx MACOSX_BUNDLE
 -  ${wsjtx_CXXSRCS}
 -  ${wsjtx_GENUISRCS}
 -  ${WSJTX_ICON_FILE}
 -  ${wsjtx_RESOURCES_RCC}
 -  ${wsjtx_VERSION_RESOURCES}
+-  ${wsjtx_PLATFORM_RESOURCES}
 -  )
 -
 -if (WSJT_CREATE_WINMAIN)
@@ -138,8 +170,8 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
 -  MACOSX_BUNDLE_INFO_STRING "${PROJECT_DESCRIPTION}"
 -  MACOSX_BUNDLE_ICON_FILE "${WSJTX_ICON_FILE}"
 -  MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}
--  MACOSX_BUNDLE_SHORT_VERSION_STRING "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}"
--  MACOSX_BUNDLE_LONG_VERSION_STRING "Version ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${SCS_VERSION_STR}"
+-  MACOSX_BUNDLE_SHORT_VERSION_STRING "v${wsjtx_VERSION}"
+-  MACOSX_BUNDLE_LONG_VERSION_STRING "Version ${wsjtx_VERSION}"
 -  MACOSX_BUNDLE_BUNDLE_NAME "${PROJECT_BUNDLE_NAME}"
 -  MACOSX_BUNDLE_BUNDLE_EXECUTABLE_NAME "${PROJECT_NAME}"
 -  MACOSX_BUNDLE_COPYRIGHT "${PROJECT_COPYRIGHT}"
@@ -197,11 +229,10 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
 -  )
 -add_executable (udp_daemon UDPExamples/UDPDaemon.cpp ${udp_daemon_VERSION_RESOURCES})
 -target_link_libraries (udp_daemon wsjtx_udp-static)
--
+ 
  generate_version_info (wsjtx_app_version_VERSION_RESOURCES
    NAME wsjtx_app_version
-   BUNDLE ${PROJECT_BUNDLE_NAME}
-@@ -1518,47 +1358,9 @@
+@@ -1797,47 +1605,11 @@
  add_executable (wsjtx_app_version AppVersion/AppVersion.cpp ${wsjtx_app_version_VERSION_RESOURCES})
  target_link_libraries (wsjtx_app_version wsjt_qt)
  
@@ -238,7 +269,8 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
 -    add_dependencies (wsjtx debian)
 -  endif (NOT APPLE)
 -endif (UNIX)
--
++
+ 
  #
  # installation
  #
@@ -249,21 +281,34 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
  
  # install (TARGETS wsjtx_udp EXPORT udp
  #   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-@@ -1577,12 +1379,7 @@
+@@ -1856,7 +1628,7 @@
  #   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/wsjtx
  #   )
  
 -install (TARGETS udp_daemon message_aggregator wsjtx_app_version
--  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime
--  BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime
--  )
--
--install (TARGETS jt9 wsprd fmtave fcal fmeasure
 +install (TARGETS wsjtx_app_version jt9 wsprd
    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime
    BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime
    )
-@@ -1595,38 +1392,6 @@
+@@ -1866,17 +1638,7 @@
+   BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime
+   )
+ 
+-install (TARGETS qmap
+-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime
+-  BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime
+-  )
+ 
+-if (NOT WSJT_SKIP_MAP65)
+-  install (TARGETS map65
+-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime
+-    BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT runtime
+-    )
+-endif ()
+ 
+ if(WSJT_BUILD_UTILS)
+ install (TARGETS ft8code jt65code jt9code jt4code msk144code 
+@@ -1886,37 +1648,9 @@
    )
  endif(WSJT_BUILD_UTILS)  
  
@@ -273,21 +318,21 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
 -  #COMPONENT runtime
 -  RENAME rigctl-wsjtx${CMAKE_EXECUTABLE_SUFFIX}
 -  )
--
+ 
 -install (PROGRAMS
 -  ${RIGCTLD_EXE}
 -  DESTINATION ${CMAKE_INSTALL_BINDIR}
 -  #COMPONENT runtime
 -  RENAME rigctld-wsjtx${CMAKE_EXECUTABLE_SUFFIX}
 -  )
--
+ 
 -install (PROGRAMS
 -  ${RIGCTLCOM_EXE}
 -  DESTINATION ${CMAKE_INSTALL_BINDIR}
 -  #COMPONENT runtime
 -  RENAME rigctlcom-wsjtx${CMAKE_EXECUTABLE_SUFFIX}
 -  )
--
+ 
 -install (FILES
 -  README
 -  COPYING
@@ -298,11 +343,10 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
 -  DESTINATION ${CMAKE_INSTALL_DOCDIR}
 -  #COMPONENT runtime
 -  )
--
+ 
  install (FILES
    cty.dat
-   cty.dat_copyright.txt
-@@ -1635,13 +1400,6 @@
+@@ -1930,12 +1664,6 @@
    #COMPONENT runtime
    )
  
@@ -312,15 +356,13 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
 -  FILES_MATCHING REGEX "^.*[^~]$"
 -  #COMPONENT runtime
 -  )
--
- #
- # Mac installer files
- #
-@@ -1693,22 +1451,6 @@
-   "${CMAKE_CURRENT_BINARY_DIR}/wsjtx_config.h"
+ 
+ if (APPLE)
+   set (WSJT_SOUND_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR})
+@@ -2028,20 +1756,6 @@
    )
  
--
+ 
 -if (NOT WIN32 AND NOT APPLE)
 -  # install a desktop file so wsjtx appears in the application start
 -  # menu with an icon
@@ -335,7 +377,6 @@ diff -ur wsjtx-orig/CMakeLists.txt wsjtx/CMakeLists.txt
 -    #COMPONENT runtime
 -    )
 -endif (NOT WIN32 AND NOT APPLE)
--
+ 
  if (APPLE)
    set (CMAKE_POSTFLIGHT_SCRIPT
-     "${wsjtx_BINARY_DIR}/postflight.sh")
